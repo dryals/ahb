@@ -1,0 +1,36 @@
+Wed Mar 20 14:23:21 EDT 2024
+This software stack is maintained by the Purdue Bioinformatics Core. Please
+direct inquiries regarding Bioinformatics software to bioinformatics@purdue.edu 
+---------------------
+VERSION: maf10
+---------------------
+---------------------
+Analysis
+---------------------
+starting admix...
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Joining, by = "id"
+Submitted batch job 32378163
+plink: generating PCA...
+Warning: This run includes BLAS/LAPACK linear algebra operations which
+currently disregard the --threads limit.  If this is problematic, you may want
+to recompile against single-threaded BLAS/LAPACK.
+Warning: calculating 289 PCs, since there are only 289 samples.
+Warning: This run includes BLAS/LAPACK linear algebra operations which
+currently disregard the --threads limit.  If this is problematic, you may want
+to recompile against single-threaded BLAS/LAPACK.
+Warning: calculating 363 PCs, since there are only 363 samples.
+starting reference admix...
+/var/spool/slurm/job32378157/slurm_script: line 183: cd: /scratch/bell/dryals/admix/supervised: No such file or directory
+/var/spool/slurm/job32378157/slurm_script: line 187: syntax error near unexpected token `done'
+/var/spool/slurm/job32378157/slurm_script: line 187: `    done'

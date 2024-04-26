@@ -1,0 +1,224 @@
+Thu Nov  2 09:59:38 EDT 2023
+This software stack is maintained by the Purdue Bioinformatics Core. Please
+direct inquiries regarding Bioinformatics software to bioinformatics@purdue.edu 
+unzipping...
+starting atram...
+
+(   88047) 2023-11-02 10:00:24.694610 INFO : ################################################################################
+(   88047) 2023-11-02 10:00:24.694647 INFO : aTRAM version: v2.4.4
+(   88047) 2023-11-02 10:00:24.694655 INFO : Python version: 3.11.2 (main, Mar 27 2023, 23:42:44) [GCC 11.2.0]
+(   88047) 2023-11-02 10:00:24.694668 INFO : /group/bioinfo/apps/apps/miniconda-4.3.21/envs/atram-2.4.3/bin/atram_preprocessor.py --cpus 8 -b ./lib/20-HB -s 50 --end-1 150041df-4fd9-49cf-9a72-ef5cbefe0cf2_R1.fastq --end-2 150041df-4fd9-49cf-9a72-ef5cbefe0cf2_R2.fastq -t ./tmp
+(   88047) 2023-11-02 10:00:24.942461 INFO : Loading "150041df-4fd9-49cf-9a72-ef5cbefe0cf2_R1.fastq" into sqlite database
+(   88047) 2023-11-02 10:00:54.545324 INFO : Loading "150041df-4fd9-49cf-9a72-ef5cbefe0cf2_R2.fastq" into sqlite database
+(   88047) 2023-11-02 10:01:23.714120 INFO : Creating an index for the sequence table
+(   88047) 2023-11-02 10:01:34.298269 INFO : Assigning sequences to shards
+(   88047) 2023-11-02 10:01:38.962950 INFO : Making blast DBs
+(   88047) 2023-11-02 10:02:23.935255 INFO : Finished making all 50 blast DBs
+(   89119) 2023-11-02 10:02:25.182926 INFO : ################################################################################
+(   89119) 2023-11-02 10:02:25.182996 INFO : aTRAM version: v2.4.4
+(   89119) 2023-11-02 10:02:25.183010 INFO : Python version: 3.11.2 (main, Mar 27 2023, 23:42:44) [GCC 11.2.0]
+(   89119) 2023-11-02 10:02:25.183020 INFO : /group/bioinfo/apps/apps/miniconda-4.3.21/envs/atram-2.4.3/bin/atram.py -b ./lib/20-HB -Q /home/dryals/ryals/ahb/AHB_markers.fasta -i 5 --cpus 8 -a abyss --length 100 --fraction 1.0 --log-file 20-HBlog -o ./out/20-HB -t ./tmp --bit-score 70
+(   89119) 2023-11-02 10:02:25.183048 INFO : aTRAM blast DB = "./lib/20-HB", query = "AHB_markers_C1_1.fasta", iteration 1
+(   89119) 2023-11-02 10:02:25.185786 INFO : Blasting query against shards: iteration 1
+(   89119) 2023-11-02 10:02:28.437538 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:02:28.439178 INFO : 2176 blast hits in iteration 1
+(   89119) 2023-11-02 10:02:28.439202 INFO : Writing assembler input files: iteration 1
+(   89119) 2023-11-02 10:02:38.426334 INFO : Assembling shards with abyss: iteration 1
+(   89119) 2023-11-02 10:02:43.260830 INFO : Saving assembled contigs: iteration 1
+(   89119) 2023-11-02 10:02:43.481992 INFO : Creating new query files: iteration 1
+(   89119) 2023-11-02 10:02:43.814693 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_C1_1.fasta_01_long_reads.fasta", iteration 2
+(   89119) 2023-11-02 10:02:43.815737 INFO : Blasting query against shards: iteration 2
+(   89119) 2023-11-02 10:02:46.022181 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:02:46.028265 INFO : 6318 blast hits in iteration 2
+(   89119) 2023-11-02 10:02:46.028287 INFO : Writing assembler input files: iteration 2
+(   89119) 2023-11-02 10:02:50.995163 INFO : Assembling shards with abyss: iteration 2
+(   89119) 2023-11-02 10:02:53.285740 INFO : Saving assembled contigs: iteration 2
+(   89119) 2023-11-02 10:02:53.508696 INFO : Creating new query files: iteration 2
+(   89119) 2023-11-02 10:02:53.667051 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_C1_1.fasta_02_long_reads.fasta", iteration 3
+(   89119) 2023-11-02 10:02:53.668778 INFO : Blasting query against shards: iteration 3
+(   89119) 2023-11-02 10:02:55.813965 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:02:55.832497 INFO : 11679 blast hits in iteration 3
+(   89119) 2023-11-02 10:02:55.832520 INFO : Writing assembler input files: iteration 3
+(   89119) 2023-11-02 10:02:56.954726 INFO : Assembling shards with abyss: iteration 3
+(   89119) 2023-11-02 10:02:59.383560 INFO : Saving assembled contigs: iteration 3
+(   89119) 2023-11-02 10:02:59.617330 INFO : Creating new query files: iteration 3
+(   89119) 2023-11-02 10:02:59.814240 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_C1_1.fasta_03_long_reads.fasta", iteration 4
+(   89119) 2023-11-02 10:02:59.818595 INFO : Blasting query against shards: iteration 4
+(   89119) 2023-11-02 10:03:02.153499 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:02.171100 INFO : 18259 blast hits in iteration 4
+(   89119) 2023-11-02 10:03:02.171123 INFO : Writing assembler input files: iteration 4
+(   89119) 2023-11-02 10:03:02.916889 INFO : Assembling shards with abyss: iteration 4
+(   89119) 2023-11-02 10:03:05.549084 INFO : Saving assembled contigs: iteration 4
+(   89119) 2023-11-02 10:03:05.770489 INFO : Creating new query files: iteration 4
+(   89119) 2023-11-02 10:03:05.899835 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_C1_1.fasta_04_long_reads.fasta", iteration 5
+(   89119) 2023-11-02 10:03:05.903258 INFO : Blasting query against shards: iteration 5
+(   89119) 2023-11-02 10:03:08.354128 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:08.377912 INFO : 20353 blast hits in iteration 5
+(   89119) 2023-11-02 10:03:08.377935 INFO : Writing assembler input files: iteration 5
+(   89119) 2023-11-02 10:03:08.799800 INFO : Assembling shards with abyss: iteration 5
+(   89119) 2023-11-02 10:03:11.538518 INFO : Saving assembled contigs: iteration 5
+(   89119) 2023-11-02 10:03:11.756743 INFO : Creating new query files: iteration 5
+(   89119) 2023-11-02 10:03:11.917978 INFO : All iterations completed
+(   89119) 2023-11-02 10:03:11.918890 INFO : Writing 6 filtered contigs after iteration 5
+(   89119) 2023-11-02 10:03:11.923104 INFO : 6 total contigs after iteration 5
+(   89119) 2023-11-02 10:03:12.036185 INFO : ################################################################################
+(   89119) 2023-11-02 10:03:12.036208 INFO : aTRAM version: v2.4.4
+(   89119) 2023-11-02 10:03:12.036220 INFO : Python version: 3.11.2 (main, Mar 27 2023, 23:42:44) [GCC 11.2.0]
+(   89119) 2023-11-02 10:03:12.036230 INFO : /group/bioinfo/apps/apps/miniconda-4.3.21/envs/atram-2.4.3/bin/atram.py -b ./lib/20-HB -Q /home/dryals/ryals/ahb/AHB_markers.fasta -i 5 --cpus 8 -a abyss --length 100 --fraction 1.0 --log-file 20-HBlog -o ./out/20-HB -t ./tmp --bit-score 70
+(   89119) 2023-11-02 10:03:12.036255 INFO : aTRAM blast DB = "./lib/20-HB", query = "AHB_markers_A1e_2.fasta", iteration 1
+(   89119) 2023-11-02 10:03:12.038534 INFO : Blasting query against shards: iteration 1
+(   89119) 2023-11-02 10:03:13.920827 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:13.922361 INFO : 2041 blast hits in iteration 1
+(   89119) 2023-11-02 10:03:13.922382 INFO : Writing assembler input files: iteration 1
+(   89119) 2023-11-02 10:03:14.007336 INFO : Assembling shards with abyss: iteration 1
+(   89119) 2023-11-02 10:03:16.488883 INFO : Saving assembled contigs: iteration 1
+(   89119) 2023-11-02 10:03:16.745008 INFO : Creating new query files: iteration 1
+(   89119) 2023-11-02 10:03:16.888764 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_A1e_2.fasta_01_long_reads.fasta", iteration 2
+(   89119) 2023-11-02 10:03:16.893500 INFO : Blasting query against shards: iteration 2
+(   89119) 2023-11-02 10:03:19.227563 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:19.234400 INFO : 6318 blast hits in iteration 2
+(   89119) 2023-11-02 10:03:19.234421 INFO : Writing assembler input files: iteration 2
+(   89119) 2023-11-02 10:03:19.400535 INFO : Assembling shards with abyss: iteration 2
+(   89119) 2023-11-02 10:03:21.682807 INFO : Saving assembled contigs: iteration 2
+(   89119) 2023-11-02 10:03:21.959258 INFO : Creating new query files: iteration 2
+(   89119) 2023-11-02 10:03:22.124094 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_A1e_2.fasta_02_long_reads.fasta", iteration 3
+(   89119) 2023-11-02 10:03:22.124994 INFO : Blasting query against shards: iteration 3
+(   89119) 2023-11-02 10:03:24.698679 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:24.713681 INFO : 11679 blast hits in iteration 3
+(   89119) 2023-11-02 10:03:24.713703 INFO : Writing assembler input files: iteration 3
+(   89119) 2023-11-02 10:03:24.957720 INFO : Assembling shards with abyss: iteration 3
+(   89119) 2023-11-02 10:03:27.391808 INFO : Saving assembled contigs: iteration 3
+(   89119) 2023-11-02 10:03:27.617801 INFO : Creating new query files: iteration 3
+(   89119) 2023-11-02 10:03:27.731296 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_A1e_2.fasta_03_long_reads.fasta", iteration 4
+(   89119) 2023-11-02 10:03:27.732066 INFO : Blasting query against shards: iteration 4
+(   89119) 2023-11-02 10:03:30.307003 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:30.311999 INFO : 18259 blast hits in iteration 4
+(   89119) 2023-11-02 10:03:30.312019 INFO : Writing assembler input files: iteration 4
+(   89119) 2023-11-02 10:03:30.631542 INFO : Assembling shards with abyss: iteration 4
+(   89119) 2023-11-02 10:03:34.762611 INFO : Saving assembled contigs: iteration 4
+(   89119) 2023-11-02 10:03:36.788814 INFO : Creating new query files: iteration 4
+(   89119) 2023-11-02 10:03:36.900607 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_A1e_2.fasta_04_long_reads.fasta", iteration 5
+(   89119) 2023-11-02 10:03:36.901400 INFO : Blasting query against shards: iteration 5
+(   89119) 2023-11-02 10:03:39.614601 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:39.624783 INFO : 20353 blast hits in iteration 5
+(   89119) 2023-11-02 10:03:39.624807 INFO : Writing assembler input files: iteration 5
+(   89119) 2023-11-02 10:03:40.004499 INFO : Assembling shards with abyss: iteration 5
+(   89119) 2023-11-02 10:03:42.849617 INFO : Saving assembled contigs: iteration 5
+(   89119) 2023-11-02 10:03:43.106097 INFO : Creating new query files: iteration 5
+(   89119) 2023-11-02 10:03:43.209243 INFO : All iterations completed
+(   89119) 2023-11-02 10:03:43.210063 INFO : Writing 6 filtered contigs after iteration 5
+(   89119) 2023-11-02 10:03:43.345100 INFO : 6 total contigs after iteration 5
+(   89119) 2023-11-02 10:03:43.486144 INFO : ################################################################################
+(   89119) 2023-11-02 10:03:43.486165 INFO : aTRAM version: v2.4.4
+(   89119) 2023-11-02 10:03:43.486176 INFO : Python version: 3.11.2 (main, Mar 27 2023, 23:42:44) [GCC 11.2.0]
+(   89119) 2023-11-02 10:03:43.486186 INFO : /group/bioinfo/apps/apps/miniconda-4.3.21/envs/atram-2.4.3/bin/atram.py -b ./lib/20-HB -Q /home/dryals/ryals/ahb/AHB_markers.fasta -i 5 --cpus 8 -a abyss --length 100 --fraction 1.0 --log-file 20-HBlog -o ./out/20-HB -t ./tmp --bit-score 70
+(   89119) 2023-11-02 10:03:43.486211 INFO : aTRAM blast DB = "./lib/20-HB", query = "AHB_markers_M3_3.fasta", iteration 1
+(   89119) 2023-11-02 10:03:43.487141 INFO : Blasting query against shards: iteration 1
+(   89119) 2023-11-02 10:03:45.582607 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:45.584218 INFO : 2036 blast hits in iteration 1
+(   89119) 2023-11-02 10:03:45.584240 INFO : Writing assembler input files: iteration 1
+(   89119) 2023-11-02 10:03:45.672828 INFO : Assembling shards with abyss: iteration 1
+(   89119) 2023-11-02 10:03:47.804410 INFO : Saving assembled contigs: iteration 1
+(   89119) 2023-11-02 10:03:48.099808 INFO : Creating new query files: iteration 1
+(   89119) 2023-11-02 10:03:48.214570 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_M3_3.fasta_01_long_reads.fasta", iteration 2
+(   89119) 2023-11-02 10:03:48.215553 INFO : Blasting query against shards: iteration 2
+(   89119) 2023-11-02 10:03:50.475816 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:50.482891 INFO : 6318 blast hits in iteration 2
+(   89119) 2023-11-02 10:03:50.482912 INFO : Writing assembler input files: iteration 2
+(   89119) 2023-11-02 10:03:50.641276 INFO : Assembling shards with abyss: iteration 2
+(   89119) 2023-11-02 10:03:53.424393 INFO : Saving assembled contigs: iteration 2
+(   89119) 2023-11-02 10:03:53.646540 INFO : Creating new query files: iteration 2
+(   89119) 2023-11-02 10:03:53.781345 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_M3_3.fasta_02_long_reads.fasta", iteration 3
+(   89119) 2023-11-02 10:03:53.784541 INFO : Blasting query against shards: iteration 3
+(   89119) 2023-11-02 10:03:56.203926 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:03:56.222465 INFO : 11679 blast hits in iteration 3
+(   89119) 2023-11-02 10:03:56.222487 INFO : Writing assembler input files: iteration 3
+(   89119) 2023-11-02 10:03:56.461395 INFO : Assembling shards with abyss: iteration 3
+(   89119) 2023-11-02 10:03:58.839641 INFO : Saving assembled contigs: iteration 3
+(   89119) 2023-11-02 10:03:59.088431 INFO : Creating new query files: iteration 3
+(   89119) 2023-11-02 10:03:59.160783 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_M3_3.fasta_03_long_reads.fasta", iteration 4
+(   89119) 2023-11-02 10:03:59.161796 INFO : Blasting query against shards: iteration 4
+(   89119) 2023-11-02 10:04:02.455561 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:02.466069 INFO : 18259 blast hits in iteration 4
+(   89119) 2023-11-02 10:04:02.466091 INFO : Writing assembler input files: iteration 4
+(   89119) 2023-11-02 10:04:02.793389 INFO : Assembling shards with abyss: iteration 4
+(   89119) 2023-11-02 10:04:05.425303 INFO : Saving assembled contigs: iteration 4
+(   89119) 2023-11-02 10:04:05.667975 INFO : Creating new query files: iteration 4
+(   89119) 2023-11-02 10:04:05.764281 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_M3_3.fasta_04_long_reads.fasta", iteration 5
+(   89119) 2023-11-02 10:04:05.765184 INFO : Blasting query against shards: iteration 5
+(   89119) 2023-11-02 10:04:08.826691 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:08.837163 INFO : 20353 blast hits in iteration 5
+(   89119) 2023-11-02 10:04:08.837186 INFO : Writing assembler input files: iteration 5
+(   89119) 2023-11-02 10:04:09.202201 INFO : Assembling shards with abyss: iteration 5
+(   89119) 2023-11-02 10:04:12.239179 INFO : Saving assembled contigs: iteration 5
+(   89119) 2023-11-02 10:04:12.469989 INFO : Creating new query files: iteration 5
+(   89119) 2023-11-02 10:04:12.555739 INFO : All iterations completed
+(   89119) 2023-11-02 10:04:12.556528 INFO : Writing 6 filtered contigs after iteration 5
+(   89119) 2023-11-02 10:04:12.560005 INFO : 6 total contigs after iteration 5
+(   89119) 2023-11-02 10:04:12.637095 INFO : ################################################################################
+(   89119) 2023-11-02 10:04:12.637117 INFO : aTRAM version: v2.4.4
+(   89119) 2023-11-02 10:04:12.637131 INFO : Python version: 3.11.2 (main, Mar 27 2023, 23:42:44) [GCC 11.2.0]
+(   89119) 2023-11-02 10:04:12.637143 INFO : /group/bioinfo/apps/apps/miniconda-4.3.21/envs/atram-2.4.3/bin/atram.py -b ./lib/20-HB -Q /home/dryals/ryals/ahb/AHB_markers.fasta -i 5 --cpus 8 -a abyss --length 100 --fraction 1.0 --log-file 20-HBlog -o ./out/20-HB -t ./tmp --bit-score 70
+(   89119) 2023-11-02 10:04:12.637167 INFO : aTRAM blast DB = "./lib/20-HB", query = "AHB_markers_O5_4.fasta", iteration 1
+(   89119) 2023-11-02 10:04:12.638112 INFO : Blasting query against shards: iteration 1
+(   89119) 2023-11-02 10:04:16.368977 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:16.371502 INFO : 2036 blast hits in iteration 1
+(   89119) 2023-11-02 10:04:16.371523 INFO : Writing assembler input files: iteration 1
+(   89119) 2023-11-02 10:04:16.461393 INFO : Assembling shards with abyss: iteration 1
+(   89119) 2023-11-02 10:04:19.704263 INFO : Saving assembled contigs: iteration 1
+(   89119) 2023-11-02 10:04:20.160116 INFO : Creating new query files: iteration 1
+(   89119) 2023-11-02 10:04:20.316742 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_O5_4.fasta_01_long_reads.fasta", iteration 2
+(   89119) 2023-11-02 10:04:20.317617 INFO : Blasting query against shards: iteration 2
+(   89119) 2023-11-02 10:04:23.219411 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:23.225764 INFO : 6318 blast hits in iteration 2
+(   89119) 2023-11-02 10:04:23.225785 INFO : Writing assembler input files: iteration 2
+(   89119) 2023-11-02 10:04:23.390721 INFO : Assembling shards with abyss: iteration 2
+(   89119) 2023-11-02 10:04:26.174410 INFO : Saving assembled contigs: iteration 2
+(   89119) 2023-11-02 10:04:26.675690 INFO : Creating new query files: iteration 2
+(   89119) 2023-11-02 10:04:26.874607 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_O5_4.fasta_02_long_reads.fasta", iteration 3
+(   89119) 2023-11-02 10:04:26.881866 INFO : Blasting query against shards: iteration 3
+(   89119) 2023-11-02 10:04:29.826853 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:29.843702 INFO : 11679 blast hits in iteration 3
+(   89119) 2023-11-02 10:04:29.843723 INFO : Writing assembler input files: iteration 3
+(   89119) 2023-11-02 10:04:30.082298 INFO : Assembling shards with abyss: iteration 3
+(   89119) 2023-11-02 10:04:33.380295 INFO : Saving assembled contigs: iteration 3
+(   89119) 2023-11-02 10:04:33.612179 INFO : Creating new query files: iteration 3
+(   89119) 2023-11-02 10:04:33.712678 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_O5_4.fasta_03_long_reads.fasta", iteration 4
+(   89119) 2023-11-02 10:04:33.715349 INFO : Blasting query against shards: iteration 4
+(   89119) 2023-11-02 10:04:35.986488 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:36.004993 INFO : 18259 blast hits in iteration 4
+(   89119) 2023-11-02 10:04:36.005017 INFO : Writing assembler input files: iteration 4
+(   89119) 2023-11-02 10:04:36.332517 INFO : Assembling shards with abyss: iteration 4
+(   89119) 2023-11-02 10:04:39.310591 INFO : Saving assembled contigs: iteration 4
+(   89119) 2023-11-02 10:04:39.593370 INFO : Creating new query files: iteration 4
+(   89119) 2023-11-02 10:04:39.706102 INFO : aTRAM blast DB = "./lib/20-HB", query = "20-HB_AHB_markers_O5_4.fasta_04_long_reads.fasta", iteration 5
+(   89119) 2023-11-02 10:04:39.707018 INFO : Blasting query against shards: iteration 5
+(   89119) 2023-11-02 10:04:41.954086 INFO : All 50 blast results completed
+(   89119) 2023-11-02 10:04:41.965357 INFO : 20353 blast hits in iteration 5
+(   89119) 2023-11-02 10:04:41.965379 INFO : Writing assembler input files: iteration 5
+(   89119) 2023-11-02 10:04:42.323916 INFO : Assembling shards with abyss: iteration 5
+(   89119) 2023-11-02 10:04:45.055273 INFO : Saving assembled contigs: iteration 5
+(   89119) 2023-11-02 10:04:45.263751 INFO : Creating new query files: iteration 5
+(   89119) 2023-11-02 10:04:45.358001 INFO : All iterations completed
+(   89119) 2023-11-02 10:04:45.358777 INFO : Writing 6 filtered contigs after iteration 5
+(   89119) 2023-11-02 10:04:45.362568 INFO : 6 total contigs after iteration 5
+checking work with blast...
+
+
+Building a new DB, current time: 11/02/2023 10:04:45
+New DB name:   /depot/bharpur/data/popgenomes/gencove/Dylan_AHB_Samples_108/fastq/20-HB/150041df-4fd9-49cf-9a72-ef5cbefe0cf2/lib/blast_db
+New DB title:  /home/dryals/ryals/ahb/AHB_markers.fasta
+Sequence type: Nucleotide
+Keep MBits: T
+Maximum file size: 3000000000B
+Adding sequences from FASTA; added 4 sequences in 0.119476 seconds.
+
+
+1_3_REV  A1e  99.735  377  1  0  1  377  262  638  0.0  691
+1_3_REV  A1e  99.735  377  1  0  1  377  262  638  0.0  691
+1_3_REV  A1e  99.735  377  1  0  1  377  262  638  0.0  691
+1_3_REV  A1e  99.735  377  1  0  1  377  262  638  0.0  691
+rm: cannot remove ‘tmp/*’: No such file or directory
+
+DONE
+Thu Nov  2 10:04:47 EDT 2023
