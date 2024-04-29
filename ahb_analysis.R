@@ -4,7 +4,11 @@ library(reshape2)
 library(readxl)
 select = dplyr::select
 
-setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
+
+
+##TODO:
+  #fix multiple ahb csv's
+  #
 
 
 #choose references
@@ -211,7 +215,8 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   #rename
   admix = admix %>% rename(A = V4, M = V1, C = V2, O = V3)
   
-  ahb.plot =  ahb4 %>% left_join(admix %>% select(A, gencove_id = oldid))
+  ahb.plot =  ahb4 %>% select(-A) %>%
+              left_join(admix %>% select(A, oldid))
   
   
   #establish populations
@@ -225,7 +230,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
   
   ahbmod = glm(AmitoBin ~ pop + A, family = binomial, data = ahb.moddat)
-  summary(ahbmod)
+  summary(ahbmod)$aic
   
     #fit some values
         newdat = map_dfr(unique(ahb.plot$pop), function(x){
@@ -255,7 +260,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   ahb.plot %>% group_by(pop) %>% summarise(n=n())
   #n each mitotype
   ahb.plot %>% group_by(call) %>% summarise(n=n())
-  #range of A calues
+  #range of A values
   ahb.m = ahb.plot %>% group_by(pop) %>% 
     summarise(r1 = range(A)[1], r2 = range(A)[2], m = mean(A))
   ahb.m
@@ -298,7 +303,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   
 #admixture bar chart
   
-  ahb.bar = admix %>% left_join(ahb.plot %>% select(oldid = gencove_id, pop))
+  ahb.bar = admix %>% left_join(ahb.plot %>% select(oldid, pop))
   
   #add bar id
   ahb.bar = ahb.bar %>% arrange(pop, A)
@@ -325,7 +330,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
     select(1:5)
   colnames(pca) = c("fam", "oldid", "PC1", "PC2", "PC3")
   pca = pca %>% 
-    left_join(ahb.plot %>% select(oldid = gencove_id, individual_id, colony_id, state, call, pop)) %>%
+    left_join(ahb.plot %>% select(oldid, id, id2, state, call, pop)) %>%
     left_join(admix %>% select(oldid, A, M, C, O), by = 'oldid')
   
   pca$pop = factor(pca$pop,
@@ -369,7 +374,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   reflins = read.delim("/home/dylan/Documents/bees/harpurlab/project/popgen/admixResults/fullref/refData.txt")
   allpca = allpca %>% left_join(reflins %>% select(oldid = SRR, lineage, country))
   allpca$lineage[is.na(allpca$lineage)] = "admixed"
-  allpca = allpca %>% left_join(ahb.plot %>% select(oldid = gencove_id, pop))
+  allpca = allpca %>% left_join(ahb.plot %>% select(oldid, pop))
   
   allpca$lineage2 = allpca$lineage
   allpca$lineage2[allpca$lineage == "C" & allpca$country == "Italy"] = "Ci"
@@ -400,240 +405,5 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
          y = paste0("PC2 (", PCev[2], "%)"))+
     scale_color_manual(values = plot.colors)+
     theme_bw()
-  
-  
-  
- 
-  
-  
-#####
-  
-  
-  
-  
-  
-   
-#old
-  
-#####
-  
-#other mitos
-  
-mitoadmix = admix %>% left_join(ahb.plot %>% select(oldid = vcfid, pop, call)) %>%
-  filter(!is.na(call))
-
-mitoadmix %>% group_by(call) %>% summarise(A = mean(A), M = mean(M), O = mean(O),
-                                           C = mean(C))
-
-
-plot(mitoadmix$A, mitoadmix$call == "A1e")
-  
-
-
-
-###
-
-#unsupervised admix
-
-#connect to most-recent admix run
-fam = read.delim("data/admix.fam", sep = "", header = F) %>% select(oldid = V1)
-sum(!grepl("SRR", fam$oldid))
-admix = read.delim("data/unsupadmix.4.Q", header = F, sep ="")
-admix = cbind(admix, fam)
-
-#attach lineage
-reflins = read.delim("/home/dylan/Documents/bees/harpurlab/project/popgen/admixResults/fullref/refData.txt")
-ahb.bar = admix %>% left_join(ahb4 %>% select(oldid, state))
-ahb.bar = ahb.bar %>% left_join(reflins %>% select(oldid = SRR, lineage))
-ahb.bar$state[!is.na(ahb.bar$lineage)] = ahb.bar$lineage[!is.na(ahb.bar$lineage)]
-
-ahb.bar = ahb.bar %>% select(-lineage)
-
-
-#add bar id
-ahb.bar = ahb.bar %>% arrange(state, V1)
-ahb.bar$barid = (1:nrow(ahb.bar))
-
-admix.melt = ahb.bar %>% melt(id.vars = c("oldid", "barid", "state"), 
-                              measure.vars = c("V1", "V2", "V3", "V4"),
-                              variable.name = "fam")
-admix.decode = admix.melt
-admix.decode$fam = as.character(admix.decode$fam)
-admix.decode$fam[admix.decode$fam == "V1"] = "A"
-admix.decode$fam[admix.decode$fam == "V2"] = "C"
-admix.decode$fam[admix.decode$fam == "V3"] = "M"
-admix.decode$fam[admix.decode$fam == "V4"] = "O"
-admix.decode = admix.decode %>% filter(!grepl("SRR", oldid))
-
-
-#bar chart
-ggplot(data = admix.decode) +
-  geom_bar(aes(x = as.factor(barid), y = value, fill = fam), 
-           stat='identity', width = 1) +
-  facet_grid(cols = vars(state), scales = "free_x") +
-  scale_fill_brewer(palette = "PRGn") +
-  labs(x = "sample", y = "Proportion of Genome", fill = "Lineage") + 
-  theme_bw() + 
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.grid.major = element_blank())
-  
-
 
   
-##TODO: calculate heterozygosity as well, that would be interesting...
-  
-
-
-### old 
-#-----------
-  
-  #just curious, PA N vs NA
-  pa = ahb.plot %>% filter(state == "PA")
-  pa$aggBin = grepl("NA", pa$id)
-  ggplot(pa, aes(x = A, y = aggBin)) + geom_point()
-  
-  
-  #just admixed pops
-  ggplot(ahb.plot %>% filter(pop %in% c("AZ", "FL")), aes(x = A, y = AmitoBin, color = pop)) + 
-    geom_point(size = 3, alpha = 0.5) +
-    geom_line(data = newdat %>% filter(pop %in% c("AZ", "FL"))) +
-    facet_grid(facet = vars(pop)) + theme_bw() + 
-    labs(x = "Genomic A-lineage", y = "A-lineage Mitochondrion", 
-         title = "Detecting AHB") +
-    scale_y_continuous(breaks = c(0,1), 
-                       labels = c("False", "True"), limits = c(-.2, 1.2)) +
-    theme(legend.position = "none")
-  
-  
-    #scale_y_continuous(breaks = c(-3, 0,1, 3), labels = c("-","False", "True","-")) 
-  
-  # ahb.filter = ahb.plot %>% filter(bitscore > 1000)
-  # ggplot(ahb.filter, aes(x = A, y = AmitoBin, color = state)) + geom_point() + 
-  #   facet_grid(facet = vars(pop)) + theme_bw() + 
-  #   labs(x = "A admixture", y = "A mitotype detection", 
-  #        title = "Mitotyping by Population")
-  
-  
-  oldahb = read.csv("AHB_meta2.csv", header = T)
-  oldahb = oldahb %>% left_join(mito.calls %>% rename(vcfid = s))
-  
-  oldahb %>% filter(loc == "FL", Amito == 1, call != "A1e")
-  oldahb %>% filter(loc == "FL", Amito == 0, call == "A1e")
-  
-  #read admix
-  ahb.full = ahb %>% left_join(fix2 %>% select(oldid, V1, V2, V3, V4))
-  in.test = ahb.full %>% filter(state == "IN") %>% 
-    select(id, call, V1, V2, V3, V4) %>% arrange(desc(V3))
-  
-  
-  
-# very old
-  
-  
-  #read admix
-  ahb = ahb %>% left_join(fix2 %>% select(oldid, A = V1))
-
-###comparison and graphing
-  pcr.lm = glm(Amito ~ A, data = ahb, family = binomial("logit"))
-  with(pcr.lm, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
-  
-  ahb$Amt = ifelse(ahb$call == "A1e", 1, 0)
-  mt.lm = glm(Amt ~ A, data = ahb, family = binomial("logit"))
-  with(mt.lm, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
-  
-  ggplot(ahb %>% filter(Amt != Amito), aes(x= A, y = Amt, color = loc)) + 
-    geom_point()
-  
-  
-  ahb.compare = rbind(ahb %>% select(vcfid, loc, A, detection = Amito) %>% 
-                        mutate(method = "pcr", detection = as.logical(detection)),
-                      ahb %>% select(vcfid, loc, A, detection = Amt) %>% 
-                        mutate(method = "blast", detection = as.logical(detection)))
-  ahb.compare = ahb.compare %>% filter(!is.na(detection))
-  
-  ggplot(ahb.compare, aes(x = A, y = detection, color = method)) + 
-    geom_jitter(height = 0.03, width = 0, alpha = 0.8, size = 2) + 
-    labs(y = "A detection", x = "A admixture") +
-    theme_bw()
-  
-  ggplot(ahb.compare %>% filter(loc == "AZ"), aes(x = A, y = detection, color = method)) + 
-    geom_jitter(height = 0.03, width = 0, alpha = 0.8, size = 2) + 
-    labs(y = "A detection", x = "A admixture") +
-    theme_bw()
-  
-  
-  fail = ahb %>% filter(is.na(call)) %>% select(vcfid)
-  write.table(fail, file = "failed_samples_2.txt", row.names = F, quote = F, col.names = F)
-  
-  
-
-  
-  #TODO: why aren't some samples running?
-  #TODO: why is are NM mitotypes so unreliable?
-
-
-### more samples! : AZ, NM, PA, TX, IN, FL, Jamaica
-  ahb2 = fix2 %>% filter(state %in% c('AZ', 'NM', 'PA', 'TX', 'IN', "Jamaica", "FL"))
-  ahb2$vcfid = ahb2$oldid
-  
-  #fix oddities
-  oddities = ahb$oldid[ahb$vcfid != ahb$oldid]
-  for(i in 1:nrow(ahb2)){
-    if(ahb2$oldid[i] %in% oddities){
-      ahb2$vcfid[i] = ahb2$id[i]
-    }
-  }
-  
-  
-  #now to find gencove sample names for all these, download fastqs, and call mitotypes!
-  allgencove = read.delim("all_gencove_sampleNames.txt", header=F, sep = "\t") %>%
-    select(vcfid = V3, gencoveid = V2, qc = V4) %>% filter(!grepl("failed", qc))
-  
-  
-  ahb2 = ahb2 %>% left_join(allgencove)
-
-
-###unarchiving samples
-  library(viscomplexr)
-  projid = read.delim("projIDs.txt", header=F, sep = '\t')
-  missing = read.delim("missing.txt", header = F)
-  ahb = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1) %>%
-    left_join(projid %>% select(gencoveid = V1, projid = V2))
-  
-  unarch = ahb %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
-    slice(1) %>% select(projid, arg)
-  projids = unarch$projid
-  unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
-  unarch = str_split(unarch$arg, ",")
-  names(unarch) = projids
-  
-  unarch.out = data.frame(projid = NA, cmd = NA)
-  for (p in projids){
-    x = unarch[[p]]
-    y = split(x, ceiling(seq_along(x)/20))
-    z = sapply(y, vector2String)
-    z = gsub("^c[(]|[])]|[ ]", "", z)
-    out = data.frame(projid = p, cmd = z)
-    unarch.out = rbind(unarch.out, out)
-  }
-  unarch.out = unarch.out[-1,] %>% arrange(projid)
-  
-  
-  write.table(unarch.out, file = "unarchive_cmd.txt", 
-              col.names = F, quote = F, row.names = F, sep = "\t")
-  
-  write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
-              col.names = F, quote = F, row.names = F, sep = "\t")
-
-#we have a bunch from the same colony! they should ALL have the same mitotype -> good test!
-  
-ahb2.out = ahb2 %>% 
-  select(id, id2, oldid, vcfid, A, state, gencoveid, projid) %>% 
-  arrange(state, A)
-write.csv(ahb2.out, file = "AHB_meta3.csv", row.names = F, quote = F)
-
-ahb2 = read.csv("AHB_meta3.csv")
-
-
-#####
