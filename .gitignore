@@ -1,3 +1,5 @@
 outputs/*.out
 sentinel.txt
 data/*
+*.out
+
