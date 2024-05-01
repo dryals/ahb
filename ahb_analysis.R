@@ -4,11 +4,12 @@ library(reshape2)
 library(readxl)
 select = dplyr::select
 
+setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
 
 
 ##TODO:
   #fix multiple ahb csv's
-  #
+  #change AZ/NM all to AZ
 
 
 #choose references
@@ -406,4 +407,165 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
     scale_color_manual(values = plot.colors)+
     theme_bw()
 
+  
+#Metadata for SRA  
+#####
+  
+  #TODO: 
+  # lat/lon
+  # isolation source (wild or managed)
+  
+sra = ahb4 %>% select(`Sample Name` = id, state, 
+                      `mitochondrial haplotype` = call)
+sra$state[sra$state == "NM"] = "AZ"
+  #long-form state names
+  long.state = 
+    data.frame(state= unique(sra$state),
+               long = c("Indiana", "Pennsylvania", "Florida", 
+                        "Texas", "Arizona", "Jamaica"))
+  
+  sra = sra %>% left_join(long.state)
+  sra$`geographic location` = paste0("USA:", sra$long)
+    
+#collection data
+  fl.dates = sra %>% filter(state == "FL") %>% select(`Sample Name`)
+
+    fl.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/FL_AHB_combined.xlsx") %>%
+      select(2, 5, 7, 8)
+      colnames(fl.sheet) = c("Sample Name", "date", "lat", "lon")
+      
+      fl.sheet$lat = fl.sheet$lat %>% as.numeric() %>% round(6)
+      fl.sheet$lon = fl.sheet$lon %>% as.numeric() %>% round(6)
+
+      fl.sheet$`Sample Name` = gsub("[ |.].*", "",fl.sheet$`Sample Name`)
+      fl.sheet$gps = paste0(fl.sheet$lat, ", ", fl.sheet$lon)
+      fl.sheet$gps[fl.sheet$gps == "NA, NA"] = NA
+      fl.sheet = fl.sheet %>% select(-lat, -lon)
+      
+    fl.dates = fl.dates %>% left_join(fl.sheet, multiple = 'first')
+    #use ID for dates that do not match
+    fl.match = fl.dates %>% filter(is.na(date))
+    fl.dates = fl.dates %>% filter(!is.na(date))
+    
+    fl.match$date = gsub("^.*([0-9]{8}).*$", "\\1", fl.match$`Sample Name`)
+    fl.match$date = gsub('^([0-9]{2})([0-9]{2})([0-9]{4})$', '\\3-\\1-\\2', 
+                         fl.match$date) %>% as.Date()
+    fl.dates = rbind(fl.dates, fl.match)
+    #other metadata
+    fl.dates$collected_by = "Florida Department of Agriculture and Consumer Services"
+    
+  az.dates = sra %>% filter(state == "AZ") %>% select(`Sample Name`)
+    az.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
+                          skip = 1) %>%
+      rename(id = 2) %>%
+      select(id, gps = `GPS coordinates`) %>%
+      mutate(id = toupper(id)) %>%
+      mutate(id = gsub(" ", "", id))
+      az.sheet$id[az.sheet$id == "G10"] = "z-G10"
+      az.sheet$id[az.sheet$id == "D6"] = "D6-OG"
+    
+    az.dates$date = as.Date("2021-08-17")
+    az.dates = az.dates %>% left_join(az.sheet %>% select('Sample Name' = id, gps))
+    #other meta data
+    az.dates$collected_by = "Ethel Villalobos"
+    
+  tx.dates = sra %>% filter(state == "TX") %>% select(`Sample Name`)
+    tx.dates$date = paste0(gsub("^.*[-]", "", tx.dates$`Sample Name`),
+                           "-08-01") %>% as.Date()
+    #other meta
+    tx.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/Sample_Info_Dickey_Rangel.xlsx") %>%
+      select(`Sample Name` = 1, lat = 5, lon = 6) %>%
+      mutate(lat = gsub(" N", "", lat),
+             lon = gsub(" W", "", lon)) %>%
+      mutate(lat = round(as.numeric(lat), 6),
+             lon = round(as.numeric(lon), 6)) %>%
+      mutate(gps = paste0(lat, ", ", lon)) %>%
+      select(-lat, -lon)
+    tx.dates = tx.dates %>% left_join(tx.sheet)
+    tx.dates$collected_by = "Myra Dickey"
+  
+  pa.dates = sra %>% filter(state == "PA") %>% select(`Sample Name`)
+    pa.dates$date = as.Date("2022-08-01")
+    #other meta
+    pa.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/dkredit_CDean_Gencove_Metadata_Corrected.xlsx",
+                          range = "A1:H79") %>%
+      select(id = 2, lat = 7, lon = 8) %>%
+      filter(!is.na(lat)) %>%
+      mutate(lat = round(as.numeric(lat), 6),
+             lon = round(as.numeric(lon), 6)) %>%
+      mutate(gps = paste0(lat, ", ", lon)) %>%
+      select(-lat, -lon) %>%
+      mutate(site = toupper(gsub("^(.*)[ |-][N|A].*", "\\1", id))) %>%
+      distinct(gps, site)
+    
+    pa.dates = pa.dates %>% 
+      mutate(site2 = toupper(`Sample Name`))
+      pa.dates$gps = NA
+      
+      for(i in 1:nrow(pa.sheet)){
+        pa.dates$gps[grepl(pa.sheet$site[i], pa.dates$site2)] = pa.sheet$gps[i]
+      }
+    
+    pa.dates = pa.dates %>% select(-site2)
+    pa.dates$collected_by = "Charles C. Dean"
+    
+
+  in.dates = sra %>% filter(state == "IN") %>% select(`Sample Name`)
+    in.dates$date = as.Date("2020-06-01")
+    #KF
+    in.dates$date[grepl("IN23KF", in.dates$`Sample Name`)] = as.Date("2023-06-01")
+    #KG
+    in.dates$date[grepl("202.Q", in.dates$`Sample Name`)] =
+      paste0(gsub("^.*[_]([0-9]{4}).*", "\\1", 
+                  in.dates$`Sample Name`[grepl("202.Q", in.dates$`Sample Name`)]),
+             "-06-01")
+    #other meta
+    in.dates$gps = NA
+    
+    maddie.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/carpenter_gpsfix.xlsx") %>%
+      select(site = 1, gps = 4)
+    for(i in 1:nrow(maddie.sheet)){
+      in.dates$gps[grepl(maddie.sheet$site[i], in.dates$`Sample Name`)] = maddie.sheet$gps[i]
+    }
+    
+    in.dates$collected_by = "Madeline Carpenter"
+    in.dates$collected_by[grepl("IN23KF", in.dates$`Sample Name`)] = "Ken Foster"
+    in.dates$gps[grepl("IN23KF", in.dates$`Sample Name`)] = "40.46469, -86.7221"
+    
+    in.dates$collected_by[grepl("202.Q", in.dates$`Sample Name`)] = "Krispn Given"
+    in.dates$gps[grepl("202.Q", in.dates$`Sample Name`)] = "40.42857, -86.94861"
+    
+  all.dates = rbind(fl.dates, az.dates, tx.dates, pa.dates, in.dates)
+  sra = sra %>% left_join(all.dates)
+  
+    
+    
+#format for sra
+  sra.out = sra %>%
+    mutate(Organism = "Apis mellifera",
+           tissue = "full body",
+           `isolation source` = "Managed colony",
+           Sex = "female",
+           Dev_stage = "adult") %>%
+    select(`Sample Name`, Organism, collection_date = date, `geographic location`,
+           tissue, `isolation source`, collected_by, Sex, Dev_stage, Lat_Lon = gps)
+    
+  
+  #remove Jamaica (already in SRA)
+  sra.out = sra.out %>% filter(!grepl("Jamaica", `geographic location`))
+    # jam = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/jamaica/biosample.xlsx",
+    #                  sheet = 'Sheet1') %>%
+    #   select(-breed)
+    # sra.out = rbind(sra.out, jam)
+    
+  #fix date format
+  sra.out$collection_date = as.character(sra.out$collection_date)
+  sra.out$sample_identifier = sra.out$`Sample Name`
+  sra.out$ecotype = "Admixed"
+    
+    write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
+    
+  
+  
+  
   
