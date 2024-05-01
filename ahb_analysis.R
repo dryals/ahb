@@ -564,6 +564,42 @@ sra$state[sra$state == "NM"] = "AZ"
   sra.out$ecotype = "Admixed"
     
     write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
+
+#working with gencove samples
+#####  
+    
+
+    ###unarchiving samples
+    library(viscomplexr)
+    #projid = read.delim("projIDs.txt", header=F, sep = '\t')
+    missing = read.delim("outputs/failed.out", header = F)
+    ahb3 = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1)
+    
+    unarch = ahb3 %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
+      slice(1) %>% select(projid, arg)
+    projids = unarch$projid
+    unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
+    unarch = str_split(unarch$arg, ",")
+    names(unarch) = projids
+    
+    unarch.out = data.frame(projid = NA, cmd = NA)
+    for (p in projids){
+      x = unarch[[p]]
+      y = split(x, ceiling(seq_along(x)/20))
+      z = sapply(y, vector2String)
+      z = gsub("^c[(]|[])]|[ ]", "", z)
+      out = data.frame(projid = p, cmd = z)
+      unarch.out = rbind(unarch.out, out)
+    }
+    unarch.out = unarch.out[-1,] %>% arrange(projid)
+    
+    
+    write.table(unarch.out, file = "unarchive_cmd2.txt", 
+                col.names = F, quote = F, row.names = F, sep = "\t")
+    
+    
+    # write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
+    #             col.names = F, quote = F, row.names = F, sep = "\t")
     
   
   
