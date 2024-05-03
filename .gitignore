@@ -1,4 +1,4 @@
-outputs/*.out
+outputs/*
 sentinel.txt
 data/*
 *.out
