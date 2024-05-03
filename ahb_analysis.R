@@ -553,54 +553,85 @@ sra$state[sra$state == "NM"] = "AZ"
   
   #remove Jamaica (already in SRA)
   sra.out = sra.out %>% filter(!grepl("Jamaica", `geographic location`))
-    # jam = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/jamaica/biosample.xlsx",
-    #                  sheet = 'Sheet1') %>%
-    #   select(-breed)
-    # sra.out = rbind(sra.out, jam)
+
     
   #fix date format
   sra.out$collection_date = as.character(sra.out$collection_date)
   sra.out$sample_identifier = sra.out$`Sample Name`
   sra.out$ecotype = "Admixed"
     
-    write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
+    #write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
+    
+    
+#sra metadata
+    ahb3 = read.csv("AHB_meta3.csv")
+    nrow(ahb3)
+    nrow(ahb4)
+    ahb4 = read.csv("AHBmeta4.csv")
+    
+    meta = ahb4 %>% left_join(ahb3 %>% select(oldid, gencoveid)) %>%
+      select(id, gencoveid) %>%
+      mutate(sample_name = id,
+             library_ID = id,
+             title = "full genome sequence of apis mellifera from North America",
+             library_strategy = "WGS",
+             library_source = "GENOMIC",
+             library_selection = "other",
+             library_layout = "paired",
+             platform = "ILLUMINA",
+             instrument_model = "Illumina NovaSeq 6000",
+             design_description = "Bead-Linked Transposome using Illumina Nextera DNA Flex Library Preparation kit",
+             filetype = "fastq",
+             filename = paste0(gencoveid, "_R1.fastq.gz"),
+             filename2 = paste0(gencoveid, "_R2.fastq.gz")) %>%
+      select(-id, -gencoveid)
+    
+    #remove jamaica (already submitted)
+    meta = meta %>% filter(!grepl("C2021", sample_name))
+    
+    #write_tsv(meta, file = "../old_ahb/sra/sra_meta.tsv")
 
 #working with gencove samples
 #####  
     
 
-    ###unarchiving samples
-    library(viscomplexr)
-    #projid = read.delim("projIDs.txt", header=F, sep = '\t')
-    missing = read.delim("outputs/failed.out", header = F)
-    ahb3 = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1)
+#unarchiving samples
+  library(viscomplexr)
+  #projid = read.delim("projIDs.txt", header=F, sep = '\t')
+  missing = read.delim("outputs/failed.out", header = F)
+  ahb3 = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1)
+  
+  unarch = ahb3 %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
+    slice(1) %>% select(projid, arg)
+  projids = unarch$projid
+  unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
+  unarch = str_split(unarch$arg, ",")
+  names(unarch) = projids
+  
+  unarch.out = data.frame(projid = NA, cmd = NA)
+  for (p in projids){
+    x = unarch[[p]]
+    y = split(x, ceiling(seq_along(x)/20))
+    z = sapply(y, vector2String)
+    z = gsub("^c[(]|[])]|[ ]", "", z)
+    out = data.frame(projid = p, cmd = z)
+    unarch.out = rbind(unarch.out, out)
+  }
+  unarch.out = unarch.out[-1,] %>% arrange(projid)
     
-    unarch = ahb3 %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
-      slice(1) %>% select(projid, arg)
-    projids = unarch$projid
-    unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
-    unarch = str_split(unarch$arg, ",")
-    names(unarch) = projids
-    
-    unarch.out = data.frame(projid = NA, cmd = NA)
-    for (p in projids){
-      x = unarch[[p]]
-      y = split(x, ceiling(seq_along(x)/20))
-      z = sapply(y, vector2String)
-      z = gsub("^c[(]|[])]|[ ]", "", z)
-      out = data.frame(projid = p, cmd = z)
-      unarch.out = rbind(unarch.out, out)
-    }
-    unarch.out = unarch.out[-1,] %>% arrange(projid)
-    
-    
-    write.table(unarch.out, file = "unarchive_cmd2.txt", 
-                col.names = F, quote = F, row.names = F, sep = "\t")
-    
-    
-    # write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
-    #             col.names = F, quote = F, row.names = F, sep = "\t")
-    
+  # write.table(unarch.out, file = "unarchive_cmd2.txt", 
+  #             col.names = F, quote = F, row.names = F, sep = "\t")
+  
+  
+  # write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
+  #             col.names = F, quote = F, row.names = F, sep = "\t")
+
+      
+# downloading fastq
+  dl.list = ahb3$gencoveid
+  write.table(dl.list, "outputs/dl-list.txt", quote = F, row.names = F, col.names = F)
+  
+  
   
   
   
