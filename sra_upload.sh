@@ -10,15 +10,18 @@
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/sra_upload.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/sra_upload.out
 
+echo "moving///"
 cd $CLUSTER_SCRATCH/ahb/sra_upload
 
-lftp -u subftp,SniappegEtnurak3 ftp-private.ncbi.nlm.nih.gov
+echo "lftp..."
+
+lftp -u subftp,SniappegEtnurak3 ftp-private.ncbi.nlm.nih.gov << EOF
 
 cd uploads/dylan.k.ryals_gmail.com_q46tAQoz/impute
-
 put *
-
 bye
+EOF
+
 
 echo "DONE"
 
