@@ -10,7 +10,7 @@
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/sra_upload.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/sra_upload.out
 
-echo "moving///"
+echo "moving..."
 cd /scratch/bell/dryals/ahb/sra_upload
 
 echo "lftp..."
@@ -18,7 +18,7 @@ echo "lftp..."
 lftp -u subftp,SniappegEtnurak3 ftp-private.ncbi.nlm.nih.gov << EOF
 
 cd uploads/dylan.k.ryals_gmail.com_q46tAQoz/impute
-put *
+mput *
 
 bye
 EOF
