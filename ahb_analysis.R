@@ -10,7 +10,6 @@ setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
 
 
 ##TODO:
-  #fix multiple ahb csv's
   #change AZ/NM all to AZ
 
 
