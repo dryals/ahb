@@ -9,10 +9,6 @@ select = dplyr::select
 setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
 
 
-##TODO:
-  #change AZ/NM all to AZ
-
-
 #choose references
 #####
 
@@ -211,7 +207,6 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   
   #establish populations
   ahb.plot$pop = ahb.plot$state
-  ahb.plot$pop[grepl("NM|AZ", ahb.plot$pop)] = "AZ"
   ahb.plot$pop = factor(ahb.plot$pop,
                         levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
   
@@ -396,7 +391,6 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
     scale_color_manual(values = plot.colors)+
     theme_bw()
 
-  
   
 #mapping sampling locations
 ###  
