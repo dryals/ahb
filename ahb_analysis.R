@@ -2,6 +2,8 @@ library(purrr)
 library(tidyverse)
 library(reshape2)
 library(readxl)
+library(cowplot)
+library(usmap)
 select = dplyr::select
 
 setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
@@ -112,46 +114,42 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   
   
 #test against 3rd party mitotyping 
+
+  ahb = read.csv("ahb_metadata.csv")
   
-  ahb = read.csv("AHB_meta2.csv", header = T)
   ahb = ahb %>% left_join(mito.calls %>% rename(vcfid = s))
   #concordance with FL
-  ahb %>% filter(loc == "FL", Amito == 1, call != "A1e")
-  ahb %>% filter(loc == "FL", Amito == 0, call == "A1e")
-  
-  
-  #who's missing
-  ahb %>% filter(is.na(call)) %>% select(vcfid)
-  
-#read in larger sample set
-  ahb = read.csv("AHB_meta3.csv", header = T)
-  ahb = ahb %>% left_join(mito.calls %>% rename(vcfid = s))
-  
-  #fix some id issues
-    #az: only one bee per colony
-    ahb$id2[ahb$state == "AZ"] = 
-      ahb$id[ahb$state == "AZ"]
-    #pa -these ids are really messed up, hopefully this will help some
-    ahb$id2[ahb$state == "PA"] = 
-      gsub("-[0-9]{1,2}-[0-9]{5,}", "",ahb$id2[ahb$state == "PA"])
-    #tx - count all colonies sampled over multiple years as one colony
-    ahb$id2[ahb$state == "TX"] = 
-      gsub("-20[0-9]{2}", "",ahb$id2[ahb$state == "TX"])
-    #IN - account for SP collections
-    ahb$id2[ahb$state == "IN" & !grepl("202[0-9]Q|IN23", ahb$id2)] = 
-      ahb$id[ahb$state == "IN" & !grepl("202[0-9]Q|IN23", ahb$id2)]
-      
-  
-  #verify bees from the same colony have the same mitotype
-  ahb %>% group_by(id2) %>% filter(!is.na(call)) %>%
-    summarise(n = n(), umito = length(unique(call))) %>% 
-    filter(umito>1)
-  #these may be due to low bitscores... consider filtering ...
+  ahb %>% filter(state == "FL", Amito_PCR == 1, call != "A1e")
+  ahb %>% filter(state == "FL", Amito_PCR == 0, call == "A1e")
   
 
 #test admixture panel on references
 #####
   
+  #real observations: without imputation
+  refadmix.unimpt = cbind( read.delim("data/reference.unimpt.4.Q", header = F, sep =""),
+                    read.delim("data/reference.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+    left_join(reffam %>% select(lineage, oldid = SRR))
+  
+    refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
+                                    measure.vars = c("V1", "V2", "V3", "V4"),
+                                    variable.name = "fam")
+  #bar chart
+  plot.unimpt = ggplot(data = refadmix.unimpt.melt) +
+                      geom_bar(aes(x = oldid, y = value, fill = fam), 
+                               stat='identity', width = 1) +
+                      facet_grid(cols = vars(lineage), scales = "free_x") +
+                      scale_fill_brewer(palette = "PRGn") +
+                      labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
+                           title = "Unimputed Sites") + 
+                      theme_bw() + 
+                      theme(axis.text.x = element_blank(),
+                            axis.ticks.x = element_blank(),
+                            panel.grid.major = element_blank(),
+                            legend.position = "none")
+
+    
+  #with imputation
   refadmix = cbind( read.delim("data/reference.maf05.4.Q", header = F, sep =""),
     read.delim("data/reference.maf05.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
     left_join(reffam %>% select(lineage, oldid = SRR))
@@ -159,19 +157,24 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   refadmix.melt = refadmix %>% melt(id.vars = c("oldid", "lineage"),
                                     measure.vars = c("V1", "V2", "V3", "V4"),
                                     variable.name = "fam")
-  #bar chart
-  ggplot(data = refadmix.melt) +
-    geom_bar(aes(x = oldid, y = value, fill = fam), 
-             stat='identity', width = 1) +
-    facet_grid(cols = vars(lineage), scales = "free_x") +
-    scale_fill_brewer(palette = "PRGn") +
-    labs(x = "sample", y = "Proportion of Genome", fill = "Lineage",
-         title = "maf 0.05") + 
-    theme_bw() + 
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          panel.grid.major = element_blank())
+  
+  plot.impt = ggplot(data = refadmix.melt) +
+                    geom_bar(aes(x = oldid, y = value, fill = fam), 
+                             stat='identity', width = 1) +
+                    facet_grid(cols = vars(lineage), scales = "free_x") +
+                    scale_fill_brewer(palette = "PRGn") +
+                    labs(x = "reference genomes", y = NULL, fill = "Ancestry\nComponents",
+                         title = "Imputed Sites") + 
+                    theme_bw() + 
+                    theme(axis.text.x = element_blank(),
+                          axis.ticks.x = element_blank(),
+                          axis.text.y = element_blank(),
+                          axis.ticks.y = element_blank(),
+                          panel.grid.major = element_blank())
 
+  #supplementary
+  supp.admixcomp = plot_grid(plot.unimpt, plot.impt)
+  supp.admixcomp
   
   
 #####
@@ -183,20 +186,7 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
 #set up model 
   ahb$AmitoBin = ifelse(ahb$call == "A1e", 1, 0)
   
-  #output this for admixture analysis
-    #possible different group of samples
-  ahb5 = ahb %>%
-    group_by(state, id2) %>% arrange(desc(id)) %>% slice(1) %>%
-    select(vcfid, oldid, id, id2, state, A, AmitoBin, call)
- # write.csv(ahb4, file = "AHBmeta4.csv", row.names = F, quote = F)
 
-
-#read in AHB4
-ahb4 = read.csv("AHBmeta4.csv")
-ahb4 = ahb4 %>% left_join(mito.calls %>% select(vcfid = s, call))
-ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
-    
- 
 #connect to most-recent admix run
   fam = read.delim("data/admix.maf05.fam", sep = "", header = F) %>% select(oldid = V1)
   sum(!grepl("SRR", fam$oldid))
@@ -216,7 +206,7 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
   #rename
   admix = admix %>% rename(A = V4, M = V1, C = V2, O = V3)
   
-  ahb.plot =  ahb4 %>% select(-A) %>%
+  ahb.plot =  ahb %>% select(-A) %>%
               left_join(admix %>% select(A, oldid))
   
   
@@ -408,186 +398,268 @@ ahb4$AmitoBin = ifelse(ahb4$call == "A1e", 1, 0)
     theme_bw()
 
   
+  
+#mapping sampling locations
+###  
+library(rnaturalearth)
+library(sf)
+library(ggspatial)
+  
+samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
+  select(1,4,10)
+  samp.gps[ samp.gps == "NA"] = NA
+  
+  samp.ll = str_split(samp.gps$Lat_Lon, ",", simplify = T)
+    colnames(samp.ll) = c("lat", "lon")
+    
+  samp.gps = cbind(samp.gps[,-3], samp.ll) %>%
+    filter(!is.na(lat)) %>%
+    group_by(lat) %>%
+    slice(1) %>%
+    mutate(lat = as.numeric(lat),
+           lon = as.numeric(lon)) %>%
+    rename(id = `Sample Name`) %>%
+    left_join(ahb %>% select(id, state))
+  
+    samp.gps$state = factor(samp.gps$state,
+                     levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
+  
+  map.limits = rbind(range(samp.gps$lon), range(samp.gps$lat))
+    map.limits[,1] = map.limits[,1] - 1.2
+    map.limits[,2] = map.limits[,2] + 1.2
+  
+  region <- ne_states()
+  world = ne_countries(scale='medium')
+  
+  
+  #convert to sf
+  converted <- st_as_sf( samp.gps %>% select(lon, lat)
+                     , coords = c("lon", "lat"), crs = st_crs(region), 
+                     agr = "constant")
+  samp.gps = cbind(samp.gps, converted)
+  
+  
+  
+  #full map
+  cutout = ggplot(data = world) +
+      geom_sf() +
+      geom_rect(xmin = map.limits[1,1], xmax = map.limits[1,2], 
+                ymin = map.limits[2,1], ymax = map.limits[2,2], 
+                fill = NA, colour = "red", size = 0.8) +
+      theme(panel.background = element_rect(fill = "azure"),
+            panel.border = element_rect(fill = NA))
+  
+  
+  sampling = ggplot(data = region) +
+      geom_sf() +
+      geom_sf(data = samp.gps, aes(fill = state, geometry = geometry),
+              size = 4, shape = 23) +
+      # annotate(geom = "text", x = -90, y = 26, label = "Gulf of Mexico", 
+      #          fontface = "italic", color = "grey22", size = 6) +
+      coord_sf(xlim = map.limits[1,], 
+               ylim = map.limits[2,], expand = FALSE) +
+    scale_fill_manual(values = plot.colors) +
+    labs(fill = "location") +
+    annotation_scale(
+      location = "tl",
+      bar_cols = c("grey60", "white"),
+      text_family = "ArcherPro Book") +
+    annotation_north_arrow(
+      location = "tl", which_north = "true",
+      pad_x = unit(0.28, "in"), pad_y = unit(0.45, "in"),
+      style = ggspatial::north_arrow_nautical(
+        fill = c("grey40", "white"),
+        line_col = "grey20",
+        text_family = "ArcherPro Book")) +
+      theme(axis.title.x = element_blank(), 
+            axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
+            panel.border = element_rect(fill = NA))
+  
+  
+  supp.map = ggdraw(sampling) + 
+    draw_plot(cutout, width = 0.3, height = 0.4, 
+              x = 0.1, y = 0.01)
+  supp.map
+  
+  
+  
+  
 #Metadata for SRA  
 #####
   
-  #TODO: 
-  # lat/lon
-  # isolation source (wild or managed)
-  
-sra = ahb4 %>% select(`Sample Name` = id, state, 
-                      `mitochondrial haplotype` = call)
-sra$state[sra$state == "NM"] = "AZ"
-  #long-form state names
-  long.state = 
-    data.frame(state= unique(sra$state),
-               long = c("Indiana", "Pennsylvania", "Florida", 
-                        "Texas", "Arizona", "Jamaica"))
-  
-  sra = sra %>% left_join(long.state)
-  sra$`geographic location` = paste0("USA:", sra$long)
-    
-#collection data
-  fl.dates = sra %>% filter(state == "FL") %>% select(`Sample Name`)
-
-    fl.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/FL_AHB_combined.xlsx") %>%
-      select(2, 5, 7, 8)
-      colnames(fl.sheet) = c("Sample Name", "date", "lat", "lon")
-      
-      fl.sheet$lat = fl.sheet$lat %>% as.numeric() %>% round(6)
-      fl.sheet$lon = fl.sheet$lon %>% as.numeric() %>% round(6)
-
-      fl.sheet$`Sample Name` = gsub("[ |.].*", "",fl.sheet$`Sample Name`)
-      fl.sheet$gps = paste0(fl.sheet$lat, ", ", fl.sheet$lon)
-      fl.sheet$gps[fl.sheet$gps == "NA, NA"] = NA
-      fl.sheet = fl.sheet %>% select(-lat, -lon)
-      
-    fl.dates = fl.dates %>% left_join(fl.sheet, multiple = 'first')
-    #use ID for dates that do not match
-    fl.match = fl.dates %>% filter(is.na(date))
-    fl.dates = fl.dates %>% filter(!is.na(date))
-    
-    fl.match$date = gsub("^.*([0-9]{8}).*$", "\\1", fl.match$`Sample Name`)
-    fl.match$date = gsub('^([0-9]{2})([0-9]{2})([0-9]{4})$', '\\3-\\1-\\2', 
-                         fl.match$date) %>% as.Date()
-    fl.dates = rbind(fl.dates, fl.match)
-    #other metadata
-    fl.dates$collected_by = "Florida Department of Agriculture and Consumer Services"
-    
-  az.dates = sra %>% filter(state == "AZ") %>% select(`Sample Name`)
-    az.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
-                          skip = 1) %>%
-      rename(id = 2) %>%
-      select(id, gps = `GPS coordinates`) %>%
-      mutate(id = toupper(id)) %>%
-      mutate(id = gsub(" ", "", id))
-      az.sheet$id[az.sheet$id == "G10"] = "z-G10"
-      az.sheet$id[az.sheet$id == "D6"] = "D6-OG"
-    
-    az.dates$date = as.Date("2021-08-17")
-    az.dates = az.dates %>% left_join(az.sheet %>% select('Sample Name' = id, gps))
-    #other meta data
-    az.dates$collected_by = "Ethel Villalobos"
-    
-  tx.dates = sra %>% filter(state == "TX") %>% select(`Sample Name`)
-    tx.dates$date = paste0(gsub("^.*[-]", "", tx.dates$`Sample Name`),
-                           "-08-01") %>% as.Date()
-    #other meta
-    tx.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/Sample_Info_Dickey_Rangel.xlsx") %>%
-      select(`Sample Name` = 1, lat = 5, lon = 6) %>%
-      mutate(lat = gsub(" N", "", lat),
-             lon = gsub(" W", "", lon)) %>%
-      mutate(lat = round(as.numeric(lat), 6),
-             lon = round(as.numeric(lon), 6)) %>%
-      mutate(gps = paste0(lat, ", ", lon)) %>%
-      select(-lat, -lon)
-    tx.dates = tx.dates %>% left_join(tx.sheet)
-    tx.dates$collected_by = "Myra Dickey"
-  
-  pa.dates = sra %>% filter(state == "PA") %>% select(`Sample Name`)
-    pa.dates$date = as.Date("2022-08-01")
-    #other meta
-    pa.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/dkredit_CDean_Gencove_Metadata_Corrected.xlsx",
-                          range = "A1:H79") %>%
-      select(id = 2, lat = 7, lon = 8) %>%
-      filter(!is.na(lat)) %>%
-      mutate(lat = round(as.numeric(lat), 6),
-             lon = round(as.numeric(lon), 6)) %>%
-      mutate(gps = paste0(lat, ", ", lon)) %>%
-      select(-lat, -lon) %>%
-      mutate(site = toupper(gsub("^(.*)[ |-][N|A].*", "\\1", id))) %>%
-      distinct(gps, site)
-    
-    pa.dates = pa.dates %>% 
-      mutate(site2 = toupper(`Sample Name`))
-      pa.dates$gps = NA
-      
-      for(i in 1:nrow(pa.sheet)){
-        pa.dates$gps[grepl(pa.sheet$site[i], pa.dates$site2)] = pa.sheet$gps[i]
-      }
-    
-    pa.dates = pa.dates %>% select(-site2)
-    pa.dates$collected_by = "Charles C. Dean"
-    
-
-  in.dates = sra %>% filter(state == "IN") %>% select(`Sample Name`)
-    in.dates$date = as.Date("2020-06-01")
-    #KF
-    in.dates$date[grepl("IN23KF", in.dates$`Sample Name`)] = as.Date("2023-06-01")
-    #KG
-    in.dates$date[grepl("202.Q", in.dates$`Sample Name`)] =
-      paste0(gsub("^.*[_]([0-9]{4}).*", "\\1", 
-                  in.dates$`Sample Name`[grepl("202.Q", in.dates$`Sample Name`)]),
-             "-06-01")
-    #other meta
-    in.dates$gps = NA
-    
-    maddie.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/carpenter_gpsfix.xlsx") %>%
-      select(site = 1, gps = 4)
-    for(i in 1:nrow(maddie.sheet)){
-      in.dates$gps[grepl(maddie.sheet$site[i], in.dates$`Sample Name`)] = maddie.sheet$gps[i]
-    }
-    
-    in.dates$collected_by = "Madeline Carpenter"
-    in.dates$collected_by[grepl("IN23KF", in.dates$`Sample Name`)] = "Ken Foster"
-    in.dates$gps[grepl("IN23KF", in.dates$`Sample Name`)] = "40.46469, -86.7221"
-    
-    in.dates$collected_by[grepl("202.Q", in.dates$`Sample Name`)] = "Krispn Given"
-    in.dates$gps[grepl("202.Q", in.dates$`Sample Name`)] = "40.42857, -86.94861"
-    
-  all.dates = rbind(fl.dates, az.dates, tx.dates, pa.dates, in.dates)
-  sra = sra %>% left_join(all.dates)
-  
-    
-    
-#format for sra
-  sra.out = sra %>%
-    mutate(Organism = "Apis mellifera",
-           tissue = "full body",
-           `isolation source` = "Managed colony",
-           Sex = "female",
-           Dev_stage = "adult") %>%
-    select(`Sample Name`, Organism, collection_date = date, `geographic location`,
-           tissue, `isolation source`, collected_by, Sex, Dev_stage, Lat_Lon = gps)
-    
-  
-  #remove Jamaica (already in SRA)
-  sra.out = sra.out %>% filter(!grepl("Jamaica", `geographic location`))
-
-    
-  #fix date format
-  sra.out$collection_date = as.character(sra.out$collection_date)
-  sra.out$sample_identifier = sra.out$`Sample Name`
-  sra.out$ecotype = "Admixed"
-    
-    #write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
-    
-    
-#sra metadata
-    ahb3 = read.csv("AHB_meta3.csv")
-    nrow(ahb3)
-    nrow(ahb4)
-    ahb4 = read.csv("AHBmeta4.csv")
-    
-    meta = ahb4 %>% left_join(ahb3 %>% select(oldid, gencoveid)) %>%
-      select(id, gencoveid) %>%
-      mutate(sample_name = id,
-             library_ID = id,
-             title = "full genome sequence of apis mellifera from North America",
-             library_strategy = "WGS",
-             library_source = "GENOMIC",
-             library_selection = "other",
-             library_layout = "paired",
-             platform = "ILLUMINA",
-             instrument_model = "Illumina NovaSeq 6000",
-             design_description = "Bead-Linked Transposome using Illumina Nextera DNA Flex Library Preparation kit",
-             filetype = "fastq",
-             filename = paste0(gencoveid, "_R1.fastq.gz"),
-             filename2 = paste0(gencoveid, "_R2.fastq.gz")) %>%
-      select(-id, -gencoveid)
-    
-    #remove jamaica (already submitted)
-    meta = meta %>% filter(!grepl("C2021", sample_name))
+# sra = ahb %>% select(`Sample Name` = id, state,
+#                       `mitochondrial haplotype` = call)
+# sra$state[sra$state == "NM"] = "AZ"
+#   #long-form state names
+#   long.state =
+#     data.frame(state= unique(sra$state),
+#                long = c("Indiana", "Pennsylvania", "Florida",
+#                         "Texas", "Arizona", "Jamaica"))
+# 
+#   sra = sra %>% left_join(long.state)
+#   sra$`geographic location` = paste0("USA:", sra$long)
+# 
+# #collection data
+#   fl.dates = sra %>% filter(state == "FL") %>% select(`Sample Name`)
+# 
+#     fl.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/FL_AHB_combined.xlsx") %>%
+#       select(2, 5, 7, 8)
+#       colnames(fl.sheet) = c("Sample Name", "date", "lat", "lon")
+# 
+#       fl.sheet$lat = fl.sheet$lat %>% as.numeric() %>% round(6)
+#       fl.sheet$lon = fl.sheet$lon %>% as.numeric() %>% round(6)
+# 
+#       fl.sheet$`Sample Name` = gsub("[ |.].*", "",fl.sheet$`Sample Name`)
+#       fl.sheet$gps = paste0(fl.sheet$lat, ", ", fl.sheet$lon)
+#       fl.sheet$gps[fl.sheet$gps == "NA, NA"] = NA
+#       fl.sheet = fl.sheet %>% select(-lat, -lon)
+# 
+#     fl.dates = fl.dates %>% left_join(fl.sheet, multiple = 'first')
+#     #use ID for dates that do not match
+#     fl.match = fl.dates %>% filter(is.na(date))
+#     fl.dates = fl.dates %>% filter(!is.na(date))
+# 
+#     fl.match$date = gsub("^.*([0-9]{8}).*$", "\\1", fl.match$`Sample Name`)
+#     fl.match$date = gsub('^([0-9]{2})([0-9]{2})([0-9]{4})$', '\\3-\\1-\\2',
+#                          fl.match$date) %>% as.Date()
+#     fl.dates = rbind(fl.dates, fl.match)
+#     #other metadata
+#     fl.dates$collected_by = "Florida Department of Agriculture and Consumer Services"
+# 
+#   az.dates = sra %>% filter(state == "AZ") %>% select(`Sample Name`)
+#     az.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
+#                           skip = 1) %>%
+#       rename(id = 2) %>%
+#       select(id, gps = `GPS coordinates`) %>%
+#       mutate(id = toupper(id)) %>%
+#       mutate(id = gsub(" ", "", id))
+#       az.sheet$id[az.sheet$id == "G10"] = "z-G10"
+#       az.sheet$id[az.sheet$id == "D6"] = "D6-OG"
+# 
+#     az.dates$date = as.Date("2021-08-17")
+#     az.dates = az.dates %>% left_join(az.sheet %>% select('Sample Name' = id, gps))
+#     #other meta data
+#     az.dates$collected_by = "Ethel Villalobos"
+# 
+#   tx.dates = sra %>% filter(state == "TX") %>% select(`Sample Name`)
+#     tx.dates$date = paste0(gsub("^.*[-]", "", tx.dates$`Sample Name`),
+#                            "-08-01") %>% as.Date()
+#     #other meta
+#     tx.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/Sample_Info_Dickey_Rangel.xlsx") %>%
+#       select(`Sample Name` = 1, lat = 5, lon = 6) %>%
+#       mutate(lat = gsub(" N", "", lat),
+#              lon = gsub(" W", "", lon)) %>%
+#       mutate(lat = round(as.numeric(lat), 6),
+#              lon = round(as.numeric(lon), 6)) %>%
+#       mutate(gps = paste0(lat, ", ", lon)) %>%
+#       select(-lat, -lon)
+#     tx.dates = tx.dates %>% left_join(tx.sheet)
+#     tx.dates$collected_by = "Myra Dickey"
+# 
+#   pa.dates = sra %>% filter(state == "PA") %>% select(`Sample Name`)
+#     pa.dates$date = as.Date("2022-08-01")
+#     #other meta
+#     pa.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/dkredit_CDean_Gencove_Metadata_Corrected.xlsx",
+#                           range = "A1:H79") %>%
+#       select(id = 2, lat = 7, lon = 8) %>%
+#       filter(!is.na(lat)) %>%
+#       mutate(lat = round(as.numeric(lat), 6),
+#              lon = round(as.numeric(lon), 6)) %>%
+#       mutate(gps = paste0(lat, ", ", lon)) %>%
+#       select(-lat, -lon) %>%
+#       mutate(site = toupper(gsub("^(.*)[ |-][N|A].*", "\\1", id))) %>%
+#       distinct(gps, site)
+# 
+#     pa.dates = pa.dates %>%
+#       mutate(site2 = toupper(`Sample Name`))
+#       pa.dates$gps = NA
+# 
+#       for(i in 1:nrow(pa.sheet)){
+#         pa.dates$gps[grepl(pa.sheet$site[i], pa.dates$site2)] = pa.sheet$gps[i]
+#       }
+# 
+#     pa.dates = pa.dates %>% select(-site2)
+#     pa.dates$collected_by = "Charles C. Dean"
+# 
+# 
+#   in.dates = sra %>% filter(state == "IN") %>% select(`Sample Name`)
+#     in.dates$date = as.Date("2020-06-01")
+#     #KF
+#     in.dates$date[grepl("IN23KF", in.dates$`Sample Name`)] = as.Date("2023-06-01")
+#     #KG
+#     in.dates$date[grepl("202.Q", in.dates$`Sample Name`)] =
+#       paste0(gsub("^.*[_]([0-9]{4}).*", "\\1",
+#                   in.dates$`Sample Name`[grepl("202.Q", in.dates$`Sample Name`)]),
+#              "-06-01")
+#     #other meta
+#     in.dates$gps = NA
+# 
+#     maddie.sheet = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/carpenter_gpsfix.xlsx") %>%
+#       select(site = 1, gps = 4)
+#     for(i in 1:nrow(maddie.sheet)){
+#       in.dates$gps[grepl(maddie.sheet$site[i], in.dates$`Sample Name`)] = maddie.sheet$gps[i]
+#     }
+# 
+#     in.dates$collected_by = "Madeline Carpenter"
+#     in.dates$collected_by[grepl("IN23KF", in.dates$`Sample Name`)] = "Ken Foster"
+#     in.dates$gps[grepl("IN23KF", in.dates$`Sample Name`)] = "40.46469, -86.7221"
+# 
+#     in.dates$collected_by[grepl("202.Q", in.dates$`Sample Name`)] = "Krispn Given"
+#     in.dates$gps[grepl("202.Q", in.dates$`Sample Name`)] = "40.42857, -86.94861"
+# 
+#   all.dates = rbind(fl.dates, az.dates, tx.dates, pa.dates, in.dates)
+#   sra = sra %>% left_join(all.dates)
+# 
+# 
+# 
+# #format for sra
+#   sra.out = sra %>%
+#     mutate(Organism = "Apis mellifera",
+#            tissue = "full body",
+#            `isolation source` = "Managed colony",
+#            Sex = "female",
+#            Dev_stage = "adult") %>%
+#     select(`Sample Name`, Organism, collection_date = date, `geographic location`,
+#            tissue, `isolation source`, collected_by, Sex, Dev_stage, Lat_Lon = gps)
+# 
+# 
+#   #remove Jamaica (already in SRA)
+#   #sra.out = sra.out %>% filter(!grepl("Jamaica", `geographic location`))
+# 
+# 
+#   #fix date format
+#   sra.out$collection_date = as.character(sra.out$collection_date)
+#   sra.out$sample_identifier = sra.out$`Sample Name`
+#   sra.out$ecotype = "Admixed"
+# 
+#     write_tsv(sra.out, file = "../old_ahb/sra/biosample.tsv")
+#     
+#     
+# #sra metadata
+#     ahb3 = read.csv("AHB_meta3.csv")
+#     nrow(ahb3)
+#     nrow(ahb4)
+#     ahb4 = read.csv("AHBmeta4.csv")
+#     
+#     meta = ahb4 %>% left_join(ahb3 %>% select(oldid, gencoveid)) %>%
+#       select(id, gencoveid) %>%
+#       mutate(sample_name = id,
+#              library_ID = id,
+#              title = "full genome sequence of apis mellifera from North America",
+#              library_strategy = "WGS",
+#              library_source = "GENOMIC",
+#              library_selection = "other",
+#              library_layout = "paired",
+#              platform = "ILLUMINA",
+#              instrument_model = "Illumina NovaSeq 6000",
+#              design_description = "Bead-Linked Transposome using Illumina Nextera DNA Flex Library Preparation kit",
+#              filetype = "fastq",
+#              filename = paste0(gencoveid, "_R1.fastq.gz"),
+#              filename2 = paste0(gencoveid, "_R2.fastq.gz")) %>%
+#       select(-id, -gencoveid)
+#     
+#     #remove jamaica (already submitted)
+#     meta = meta %>% filter(!grepl("C2021", sample_name))
     
     #write_tsv(meta, file = "../old_ahb/sra/sra_meta.tsv")
 
@@ -595,44 +667,39 @@ sra$state[sra$state == "NM"] = "AZ"
 #####  
     
 
-#unarchiving samples
-  library(viscomplexr)
-  #projid = read.delim("projIDs.txt", header=F, sep = '\t')
-  missing = read.delim("outputs/failed.out", header = F)
-  ahb3 = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1)
-  
-  unarch = ahb3 %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
-    slice(1) %>% select(projid, arg)
-  projids = unarch$projid
-  unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
-  unarch = str_split(unarch$arg, ",")
-  names(unarch) = projids
-  
-  unarch.out = data.frame(projid = NA, cmd = NA)
-  for (p in projids){
-    x = unarch[[p]]
-    y = split(x, ceiling(seq_along(x)/20))
-    z = sapply(y, vector2String)
-    z = gsub("^c[(]|[])]|[ ]", "", z)
-    out = data.frame(projid = p, cmd = z)
-    unarch.out = rbind(unarch.out, out)
-  }
-  unarch.out = unarch.out[-1,] %>% arrange(projid)
-    
-  # write.table(unarch.out, file = "unarchive_cmd2.txt", 
-  #             col.names = F, quote = F, row.names = F, sep = "\t")
-  
-  
-  # write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
-  #             col.names = F, quote = F, row.names = F, sep = "\t")
-
-      
-# downloading fastq
-  dl.list = ahb3$gencoveid
-  write.table(dl.list, "outputs/dl-list.txt", quote = F, row.names = F, col.names = F)
-  
-  
-  
-  
-  
-  
+# #unarchiving samples
+#   library(viscomplexr)
+#   #projid = read.delim("projIDs.txt", header=F, sep = '\t')
+#   missing = read.delim("outputs/failed.out", header = F)
+#   ahb3 = read.csv("AHB_meta3.csv") %>% filter(vcfid %in% missing$V1)
+#   
+#   unarch = ahb3 %>% group_by(projid) %>% mutate(arg = vector2String(gencoveid)) %>%
+#     slice(1) %>% select(projid, arg)
+#   projids = unarch$projid
+#   unarch$arg = gsub("^c[(]|[])]|[ ]", "", unarch$arg)
+#   unarch = str_split(unarch$arg, ",")
+#   names(unarch) = projids
+#   
+#   unarch.out = data.frame(projid = NA, cmd = NA)
+#   for (p in projids){
+#     x = unarch[[p]]
+#     y = split(x, ceiling(seq_along(x)/20))
+#     z = sapply(y, vector2String)
+#     z = gsub("^c[(]|[])]|[ ]", "", z)
+#     out = data.frame(projid = p, cmd = z)
+#     unarch.out = rbind(unarch.out, out)
+#   }
+#   unarch.out = unarch.out[-1,] %>% arrange(projid)
+#     
+#   # write.table(unarch.out, file = "unarchive_cmd2.txt", 
+#   #             col.names = F, quote = F, row.names = F, sep = "\t")
+#   
+#   
+#   # write.table(ahb %>% select(projid, gencoveid), file = "unarchive_cmd.txt", 
+#   #             col.names = F, quote = F, row.names = F, sep = "\t")
+# 
+#       
+# # downloading fastq
+#   dl.list = ahb3$gencoveid
+#   write.table(dl.list, "outputs/dl-list.txt", quote = F, row.names = F, col.names = F)
+#   
