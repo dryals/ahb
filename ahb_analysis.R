@@ -392,6 +392,14 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
     theme_bw()
 
   
+### PC's vs Admixture 
+  pca.admix = allpca %>% left_join(admix, by = 'oldid')
+  
+  
+  
+  
+  
+  
 #mapping sampling locations
 ###  
 library(rnaturalearth)
