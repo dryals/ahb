@@ -205,6 +205,19 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
               left_join(admix %>% select(A, oldid))
   
   
+  #mean admixture statistics
+    meanse = function(x){
+        m = mean(x, na.rm = T) %>% round(4)
+        se = sd(x, na.rm = T) /  sqrt(sum(!is.na(x)))
+        se = round(se, 4)
+        return(paste0(m,", ",se))
+      }
+    
+    admix %>% filter(!grepl("SRR", oldid)) %>%
+      select(-oldid) %>%
+      summarise_all(meanse)
+
+  
   #establish populations
   ahb.plot$pop = ahb.plot$state
   ahb.plot$pop = factor(ahb.plot$pop,
@@ -393,8 +406,11 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
 
   
 ### PC's vs Admixture 
-  pca.admix = allpca %>% left_join(admix, by = 'oldid')
+  pca.admix = allpca %>% left_join(admix, by = 'oldid') %>%
+    filter(!grepl("SRR", oldid))
   
+  summary(lm(A~PC2, data = pca.admix))
+  summary(lm(M~PC1, data = pca.admix))
   
   
   
