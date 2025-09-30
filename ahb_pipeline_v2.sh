@@ -5,20 +5,21 @@
 #SBATCH -A bharpur
 #SBATCH --nodes=1 
 #SBATCH --ntasks=8
-#SBATCH --time=0-06:00:00
+#SBATCH --time=1-00:00:00
+#SBATCH --partition cpu
 #SBATCH --job-name ahb_pipeline_v2.sh
-
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/pipeline.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/pipeline.out
 
 #Dylan Ryals 15 MAR 2024
-#last edit   20 MAR 2024
+#last edit   30 SEP 2025
 
 #added file versioning 
+#revisions in 2025 
 
 date
 
-module load bioinfo bcftools plink r
+module load biocontainers bcftools plink r
 
 #set some global vars for later use 
     chrsLong=$( cat /home/dryals/ryals/diversity/chrfilter.txt | tr '\n' ',' )
@@ -29,29 +30,29 @@ module load bioinfo bcftools plink r
 #### VERSION ###
     #version will be appended to all filenames to keep versions straight
 
-    version=maf10
+    version=sep25
 
     echo "---------------------"
     echo "VERSION: $version"
     echo "---------------------"
 #### VERSION ###
     
-#     
-# echo "---------------------"
-# echo "filtering"
-# echo "---------------------"
-# 
-#     
-# echo "move samples to ahb dir..."
-#     #raw imputed vcf from gencove, no QC
-#     cd ~/ryals/ahb
-#     #extract AHB samples 
-#     awk -F',' '{print $2}' AHBmeta4.csv | tail -n +2 > sample_lists/admix2.txt
-# 
-#     bcftools view allsamp.bcf.gz -S ~/ryals/ahb/sample_lists/admix2.txt --threads $SLURM_NTASKS -Ob -o ../ahb/ahbsamples.allsites.bcf.gz
-#     cd ../ahb
-#     echo "    indexing..."
-#     bcftools index -c ahbsamples.allsites.bcf.gz
+    
+echo "---------------------"
+echo "filtering"
+echo "---------------------"
+
+    
+echo "move samples to ahb dir..."
+    #raw imputed vcf from gencove, no QC
+    cd ~/ryals/ahb
+    #extract AHB samples 
+    awk -F',' '{print $2}' AHBmeta4.csv | tail -n +2 > sample_lists/admix2.txt
+
+    bcftools view allsamp.bcf.gz -S ~/ryals/ahb/sample_lists/admix2.txt --threads $SLURM_NTASKS -Ob -o ../ahb/ahbsamples.allsites.bcf.gz
+    cd ../ahb
+    echo "    indexing..."
+    bcftools index -c ahbsamples.allsites.bcf.gz
 # 
 # echo "filtering samples..."
 #     cd $CLUSTER_SCRATCH/ahb

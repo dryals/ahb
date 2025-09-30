@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --time=00:10:00
 #SBATCH --job-name AIM_v3_array
-
+#SBATCH --partition cpu
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/dump.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/dump.out
 

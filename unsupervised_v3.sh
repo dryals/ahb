@@ -7,7 +7,7 @@
 #SBATCH --ntasks=4
 #SBATCH --time=2:00:00
 #SBATCH --job-name usadmix-array
-
+#SBATCH --partition cpu
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/er-usadmix.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/er-usadmix.out
 

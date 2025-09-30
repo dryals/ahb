@@ -7,7 +7,7 @@
 #SBATCH --ntasks=8
 #SBATCH --time=3:00:00
 #SBATCH --job-name supadmix_v3
-
+#SBATCH --partition cpu
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/supadmix.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/supadmix.out
 

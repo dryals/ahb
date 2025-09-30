@@ -7,7 +7,7 @@
 #SBATCH --ntasks=4
 #SBATCH --time=3:00:00
 #SBATCH --job-name array_filter_v3
-
+#SBATCH --partition cpu
 #SBATCH --output=/home/dryals/ryals/ahb/outputs/null.out
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/null.out
 
