@@ -223,6 +223,25 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   ahb.plot$pop = factor(ahb.plot$pop,
                         levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
   
+  
+#write out
+  sharedat = ahb %>% select(-A) %>%
+    left_join(admix %>% select(A, M, C, O, oldid)) %>% 
+    select(sample_name = id, colony_id = id2, state, 
+           mitotype_ATRAM = call, Amito_ATRAM = AmitoBin,
+           Amito_PCR, A, M, C, O)
+  
+  meta = read.delim("../old_ahb/sra/sra_meta.tsv", sep = "\t") 
+  
+  sharedat = sharedat %>% 
+    left_join(meta %>% select(sample_name, R1 = filename, R2 = filename2)) %>% 
+    filter(state != "Jamaica")
+  
+  write.csv(sharedat, "data/share_metadata.csv",
+            quote = F, row.names = F)
+  
+  
+  
 #create model
   
   ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
@@ -498,7 +517,31 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
               x = 0.1, y = 0.01)
   supp.map
   
+ 
   
+  
+# Mulu Missing
+# found = read.delim("data/muluFound2.txt", header = F)
+# meta = read.delim("../old_ahb/sra/sra_meta.tsv", sep = "\t")
+# 
+# mulusent = read.csv("../old_ahb/sra/muluexport.csv")
+# 
+#  sum(mulusent[,1] %in% found[,1])
+#  sum(found[,1] %in% mulusent[,1])
+
+# nrow(mulusent)
+# nrow(found)/2
+
+
+projids = read.delim("sample_lists/projIDs.txt") %>% 
+  rename(projid = 2)
+
+found = found %>% filter(grepl("R1", V1)) %>% 
+  rename(filename = V1) %>% 
+  left_join(meta %>% select(sample_name, filename)) %>% 
+  mutate(gencoveid = gsub("_.*", "", filename))
+  left_join()
+   
   
   
 #Metadata for SRA  
