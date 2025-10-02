@@ -12,16 +12,18 @@
 #SBATCH --error=/home/dryals/ryals/ahb/outputs/dump.out
 
 #Dylan Ryals 26 OCT 2023
-#last edit   13 MAR 2024
+#last edit   2 OCT 2025
 
 #this version reads a filename from a file to be more modular
     #this could be some sort of command line argument or named pipe, but eh
+    
+#updating for response, new slurm
 
 #launch with sbatch --array=1-16 AIM_v3.sh
 
 date
 
-module load bioinfo bcftools r
+module load biocontainers bcftools r
 
 n=$( echo $SLURM_ARRAY_TASK_ID )
 log=/depot/bharpur/data/projects/ryals/ahb/outputs/aim.out
@@ -58,9 +60,17 @@ Rscript --vanilla --silent /depot/bharpur/data/projects/ryals/ahb/aimIa_v2.R $n
     #v2 runtime: ~3:40
     #v1 runtime: ~9:30
 
-#report to logs
-echo "FINISHED CHR $n" >> $log
-echo "    FINISHED CHR $n" >> /depot/bharpur/data/projects/ryals/ahb/outputs/pipeline.out
-
+#report to logs, using flock to avoid conflicts
+( flock -x 9 
+    echo "FINISHED CHR $n" >> $log
+    echo "    FINISHED CHR $n" >> /depot/bharpur/data/projects/ryals/ahb/outputs/pipeline.out
+) 9> ~/ryals/ahb/.AIMwritelock
 echo "done"
 date
+
+
+
+
+
+
+
