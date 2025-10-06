@@ -2,4 +2,4 @@ outputs/*
 sentinel.txt
 data/*
 *.out
-
+manuscript/*

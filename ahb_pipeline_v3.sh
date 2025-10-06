@@ -145,41 +145,45 @@ echo "plink: filtering whole file for AIMs ..."
     
     cd plink
     
-#     #TODO: LD pruning 
-#             #extract ld data, removing references
-#         echo "    calculating ld..."
-#         plink --bfile topaim.${version} -r2 --ld-window 1000 --ld-window-kb 50 --ld-window-r2 0.2 \
-#             --remove /home/dryals/ryals/ahb/references/plink_refs.txt \
-#             --silent --threads $SLURM_NTASKS --out preprune
-#             
-#         #run R script to generate best set of sites by Ia
-#             #reset logfile
-#             cd /home/dryals/ryals/ahb
-#             echo -n "" > outputs/prune.out
-#             #start
-#             sbatch --array=1-16 prune_array.sh
-#             #wait
-#             echo "    waiting for pruning (see prune.out)..."
-#             while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-#             do
-#                 sleep 20 #wait between each check
-#             done
-#             #create full output
-#             echo "    compiling results..."
-#             cd /scratch/bell/dryals/pipeline/aim
-#             #this will hold all the aims
-#             cat chr*/LDremove.txt > allLDremove.txt
-#             count=$( wc -l allLDremove.txt | awk '{print $1}')
-#             echo "    marked $count sites"
-#             
-#         echo "    removing pruned sites..."
-#         cd $CLUSTER_SCRATCH/pipeline/plink
-#         #create new admix file
-#         plink --bfile topaim --make-bed --exclude ../aim/allLDremove.txt --silent \
-#             --threads $SLURM_NTASKS --out US1pcadmix
-#     
-#     #use this plink file basename for admix scripts
-#     echo "US1pcadmix" > plink_admix_filename.txt
+    #TODO: LD pruning 
+            #extract ld data, removing references
+        echo "    calculating ld..."
+        plink --bfile topaim.${version} -r2 --ld-window 1000 --ld-window-kb 50 --ld-window-r2 0.2 \
+            --remove /home/dryals/ryals/ahb/references/plink_refs.txt \
+            --silent --threads $SLURM_NTASKS --out preprune
+            
+        #run R script to generate best set of sites by Ia
+            #reset logfile
+            cd ~/ryals/ahb
+            echo -n "" > outputs/prune.out
+            #start
+            sbatch --array=1-16 prune_array.sh
+            #wait
+            echo "    waiting for pruning (see prune.out)..."
+            while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+            do
+                sleep 20 #wait between each check
+            done
+            
+            ##### more editing #####
+            
+            
+            #create full output
+            echo "    compiling results..."
+            cd /scratch/bell/dryals/pipeline/aim
+            #this will hold all the aims
+            cat chr*/LDremove.txt > allLDremove.txt
+            count=$( wc -l allLDremove.txt | awk '{print $1}')
+            echo "    marked $count sites"
+            
+        echo "    removing pruned sites..."
+        cd $CLUSTER_SCRATCH/pipeline/plink
+        #create new admix file
+        plink --bfile topaim --make-bed --exclude ../aim/allLDremove.txt --silent \
+            --threads $SLURM_NTASKS --out US1pcadmix
+    
+    #use this plink file basename for admix scripts
+    echo "US1pcadmix" > plink_admix_filename.txt
 #     
 #     
 # echo "plink: pulling references..."  

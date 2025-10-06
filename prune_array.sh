@@ -9,8 +9,8 @@
 #SBATCH --partition cpu
 #SBATCH --job-name prune_array.sh
 
-#SBATCH --output=/home/dryals/ryals/admixPipeline/outputs/dump_prune.out
-#SBATCH --error=/home/dryals/ryals/admixPipeline/outputs/dump_prune.out
+#SBATCH --output=/home/dryals/ryals/ahb/outputs/dump_prune.out
+#SBATCH --error=/home/dryals/ryals/ahb/outputs/dump_prune.out
 
 #Dylan Ryals 21 JAN 2025
 #last edited 02 OCT 2025
@@ -21,16 +21,17 @@ date
 echo "---------------"
 module load r
 
-cd $CLUSTER_SCRATCH/pipeline/aim
+#cd $CLUSTER_SCRATCH/ahb/aim
 n=$( echo $SLURM_ARRAY_TASK_ID )
-log=/depot/bharpur/data/projects/ryals/admixPipeline/outputs/prune.out
+log=~/ryals/ahb/outputs/prune.out
 
-cd ~/ryals/admixPipeline
+cd ~/ryals/ahb
 echo "starting chr $n..." >> $log
 
 Rscript --vanilla --silent LDprune_p.R $n
-
-echo "FINISHED CHR $n" >> $log
+( flock -x 9 
+    echo "FINISHED CHR $n" >> $log
+) 9> ~/ryals/ahb/.PRUNEwritelock
 
 echo "---------------"
 date
