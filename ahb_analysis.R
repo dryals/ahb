@@ -440,11 +440,15 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
 library(rnaturalearth)
 library(sf)
 library(ggspatial)
+#install.packages('rnaturalearthdata')
   
+#load gps positions of samples
+ahb = read.csv("ahb_metadata.csv")
 samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
   select(1,4,10)
   samp.gps[ samp.gps == "NA"] = NA
   
+  #format 
   samp.ll = str_split(samp.gps$Lat_Lon, ",", simplify = T)
     colnames(samp.ll) = c("lat", "lon")
     
@@ -460,32 +464,39 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
     samp.gps$state = factor(samp.gps$state,
                      levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
   
+  #build map limits using max and min values from data (plus a bit of padding)
   map.limits = rbind(range(samp.gps$lon), range(samp.gps$lat))
     map.limits[,1] = map.limits[,1] - 1.2
     map.limits[,2] = map.limits[,2] + 1.2
   
-  region <- ne_states()
+  
+  #region <- ne_states()
+  region = ne_download( scale = 10L, type = "states", category = "cultural")
   world = ne_countries(scale='medium')
   
   
-  #convert to sf
+  #convert to sf object
   converted <- st_as_sf( samp.gps %>% select(lon, lat)
                      , coords = c("lon", "lat"), crs = st_crs(region), 
                      agr = "constant")
   samp.gps = cbind(samp.gps, converted)
   
+  #color pallette 
+  plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
   
   
-  #full map
+  
+  #full map (world)
   cutout = ggplot(data = world) +
       geom_sf() +
+      #add rectangle for cutout
       geom_rect(xmin = map.limits[1,1], xmax = map.limits[1,2], 
                 ymin = map.limits[2,1], ymax = map.limits[2,2], 
                 fill = NA, colour = "red", size = 0.8) +
       theme(panel.background = element_rect(fill = "azure"),
             panel.border = element_rect(fill = NA))
   
-  
+  #just sampling range
   sampling = ggplot(data = region) +
       geom_sf() +
       geom_sf(data = samp.gps, aes(fill = state, geometry = geometry),
@@ -496,10 +507,12 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
                ylim = map.limits[2,], expand = FALSE) +
     scale_fill_manual(values = plot.colors) +
     labs(fill = "location") +
+    #scale bars
     annotation_scale(
       location = "tl",
       bar_cols = c("grey60", "white"),
       text_family = "ArcherPro Book") +
+    #north arrow
     annotation_north_arrow(
       location = "tl", which_north = "true",
       pad_x = unit(0.28, "in"), pad_y = unit(0.45, "in"),
@@ -511,7 +524,7 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
             axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
             panel.border = element_rect(fill = NA))
   
-  
+  #plot both together
   supp.map = ggdraw(sampling) + 
     draw_plot(cutout, width = 0.3, height = 0.4, 
               x = 0.1, y = 0.01)
