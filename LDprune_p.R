@@ -8,7 +8,7 @@ suppressMessages(library(tidyverse))
 setwd('~/scratch/ahb')
 ld = read.delim('plink/preprune.ld', sep = '', header = T) %>% 
   filter(CHR_A == chrno, CHR_B == chrno)
-aim = read.delim('aim/aim.*.txt', sep = '', header = F)
+aim = read.delim('aim/aim.ia.txt', sep = '', header = F)
   colnames(aim) = c("chr", "pos", "ia")
   #remove NA values
   aim = aim %>% filter(!is.na(ia))
@@ -20,7 +20,7 @@ ld = ld %>% left_join(aim %>%  select(ia_B = ia, CHR_B = chr, BP_B = pos), by = 
 #difference 
 ld$diff = ld$ia_A - ld$ia_B
 #max ia
-ld$mia = (ld$diff > 0) * ld$ia_A + (ld$diff < 0) * ld$ia_B
+ld$mia = (ld$diff > 0) * ld$ia_A + (ld$diff < 0) * ld$ia_B + (ld$diff == 0) * ld$ia_A
 
 
 ld2 = ld %>% arrange(desc(mia)) %>% 

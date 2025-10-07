@@ -125,21 +125,22 @@ echo "---------------------"
 #     done
 #     echo ""
 #     
-# echo "compiling Ia results..."    
-#     cd /scratch/bell/dryals/ahb/aim
-#     #this will hold all the aims
-#     cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.${version}.txt
-# 
-#     TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
-#
-#    
-#     #output top sites in plink format -- chr:pos
-#         #awk 'OFS=":" {print$1, $2}' aim.${version}.txt | head -n 50000 > plink_aim.${version}.txt
-#     #IA greater than zero
-#     grep -v "NA" aim.${version}.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
-#     
-#     count=$( wc -l aim.${version}.txt | awk '{print $1}')
-#     echo "    Calculated Ia for $count sites"
+echo "compiling Ia results..."    
+    cd /scratch/bell/dryals/ahb/aim
+    #this will hold all the aims
+    cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.ia.txt
+
+    #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
+
+   
+    #output top sites in plink format -- chr:pos
+        #awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
+    #IA greater than zero
+    grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
+    
+    count=$( wc -l aim.ia.txt | awk '{print $1}')
+    echo "    Calculated Ia for $count sites"
+    
 #     
 # echo "plink: filtering whole file for AIMs ..."    
 #     cd $CLUSTER_SCRATCH/ahb
