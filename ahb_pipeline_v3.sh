@@ -37,12 +37,12 @@ module load biocontainers bcftools plink r
     echo "---------------------"
 #### VERSION ###
     
-    
-echo "---------------------"
-echo "filtering"
-echo "---------------------"
-
-    
+#     
+# echo "---------------------"
+# echo "filtering"
+# echo "---------------------"
+# 
+#     
 # echo "move samples to ahb dir..."
 #     #raw imputed vcf from gencove, no QC
 #     cd ~/ryals/ahb
@@ -55,20 +55,20 @@ echo "---------------------"
 #     cd ../ahb
 #     echo "    indexing..."
 #     bcftools index -c ahbsamples.allsites.bcf.gz
-
-echo "filtering samples..."
-    cd $CLUSTER_SCRATCH/ahb
-    #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
-    bcftools filter ahbsamples.allsites.bcf.gz -S . \
-    -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
-    bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
-    -Ob -o samples.filter.${version}.bcf.gz
-    
-    echo "    indexing..."
-    bcftools index -c samples.filter.${version}.bcf.gz
-
-echo "creating site list..."
-    bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
+# 
+# echo "filtering samples..."
+#     cd $CLUSTER_SCRATCH/ahb
+#     #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
+#     bcftools filter ahbsamples.allsites.bcf.gz -S . \
+#     -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
+#     bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
+#     -Ob -o samples.filter.${version}.bcf.gz
+#     
+#     echo "    indexing..."
+#     bcftools index -c samples.filter.${version}.bcf.gz
+# 
+# echo "creating site list..."
+#     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 
 # echo "pulling reference..."
 #     cd $CLUSTER_SCRATCH/ahb
@@ -76,67 +76,70 @@ echo "creating site list..."
 #     bcftools view $refs -S /home/dryals/ryals/ahb/references/all_refs.txt -r $chrsLong -M2 -v snps -Ou | bcftools annotate --rename-chrs $rename --threads $SLURM_NTASKS -Ob -o reference.bcf.gz
 # 
 #     bcftools index -c reference.bcf.gz
-
-echo "filtering references..."
-#filter references to informative sites
-    cd $CLUSTER_SCRATCH/ahb
-    bcftools view reference.bcf.gz -T plink/samples.${version}.sites --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
-    echo "  indexing..."
-    bcftools index -c reference.filter.${version}.bcf.gz
-    
-    #kill script if the above fails
-    if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
-        echo "Filters Failed!"
-        exit 1
-    fi
-   
+# 
+# echo "filtering references..."
+# #filter references to informative sites
+#     cd $CLUSTER_SCRATCH/ahb
+#     bcftools view reference.bcf.gz -T plink/samples.${version}.sites --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
+#     echo "  indexing..."
+#     bcftools index -c reference.filter.${version}.bcf.gz
+#     
+#     #kill script if the above fails
+#     if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
+#         echo "Filters Failed!"
+#         exit 1
+#     fi
+#    
 echo "---------------------"
 echo "selecting sites"
 echo "---------------------"
    
-echo "launching Ia script"
-    #count number of samples in each population
-    cd /home/dryals/ryals/ahb/references
-    wc -l ?.txt | awk '{print $1}' > refN.txt
-    #reset logifle
-    cd /home/dryals/ryals/ahb
-    mkdir -p aim
-    echo -n "" > outputs/aim.out
-    #specify reference file
-    echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
-    #launch the admixture array
-    sbatch --array=1-16 AIM_v3.sh
-
-echo "merging samples and references..."
-    cd /scratch/bell/dryals/ahb
-    #merge and remove new multialleles
-    bcftools merge reference.filter.${version}.bcf.gz samples.filter.${version}.bcf.gz -m snps -Ou | \
-        bcftools norm -m +snps -Ou | bcftools view -M2 -m2 --threads $SLURM_NTASKS \
-        -Ob -o admix.${version}.bcf.gz
-    echo "  indexing..."
-    bcftools index -c admix.${version}.bcf.gz
-
-#wait for Ia calculation to finish if it hasn't already
-echo "waiting for Ia results (see aim.out)..."
-    cd /home/dryals/ryals/ahb
-    while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-    do
-        sleep 10 #wait between each check
-    done
-    echo ""
-    
-echo "compiling Ia results..."    
-    cd /scratch/bell/dryals/ahb/aim
-    #this will hold all the aims
-    cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.${version}.txt
-   
-    #output top sites in plink format -- chr:pos
-    awk 'OFS=":" {print$1, $2}' aim.${version}.txt | head -n 50000 > plink_aim.${version}.txt
-    count=$( wc -l aim.${version}.txt | awk '{print $1}')
-    echo "    Calculated Ia for $count sites"
-    
+# echo "launching Ia script"
+#     #count number of samples in each population
+#     cd /home/dryals/ryals/ahb/references
+#     wc -l ?.txt | awk '{print $1}' > refN.txt
+#     #reset logifle
+#     cd /home/dryals/ryals/ahb
+#     mkdir -p aim
+#     echo -n "" > outputs/aim.out
+#     #specify reference file
+#     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
+#     #launch the admixture array
+#     sbatch --array=1-16 AIM_v3.sh
+# 
+# echo "merging samples and references..."
+#     cd /scratch/bell/dryals/ahb
+#     #merge and remove new multialleles
+#     bcftools merge reference.filter.${version}.bcf.gz samples.filter.${version}.bcf.gz -m snps -Ou | \
+#         bcftools norm -m +snps -Ou | bcftools view -M2 -m2 --threads $SLURM_NTASKS \
+#         -Ob -o admix.${version}.bcf.gz
+#     echo "  indexing..."
+#     bcftools index -c admix.${version}.bcf.gz
+# 
+# #wait for Ia calculation to finish if it hasn't already
+# echo "waiting for Ia results (see aim.out)..."
+#     cd /home/dryals/ryals/ahb
+#     while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+#     do
+#         sleep 10 #wait between each check
+#     done
+#     echo ""
+#     
+# echo "compiling Ia results..."    
+#     cd /scratch/bell/dryals/ahb/aim
+#     #this will hold all the aims
+#     cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.${version}.txt
+#    
+#     #output top sites in plink format -- chr:pos
+#         #awk 'OFS=":" {print$1, $2}' aim.${version}.txt | head -n 50000 > plink_aim.${version}.txt
+#     #IA greater than zero
+#     grep -v "NA" aim.${version}.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
+#     
+#     count=$( wc -l aim.${version}.txt | awk '{print $1}')
+#     echo "    Calculated Ia for $count sites"
+#     
 echo "plink: filtering whole file for AIMs ..."    
-    cd /scratch/bell/dryals/ahb
+    cd $CLUSTER_SCRATCH/ahb
     #bp filter
     plink --bcf admix.${version}.bcf.gz --make-bed \
         --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# \
@@ -158,68 +161,62 @@ echo "plink: filtering whole file for AIMs ..."
             echo -n "" > outputs/prune.out
             #start
             sbatch --array=1-16 prune_array.sh
-#             #wait
-#             echo "    waiting for pruning (see prune.out)..."
-#             while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-#             do
-#                 sleep 20 #wait between each check
-#             done
-#             
-#             ##### more editing #####
-#             
-#             
-#             #create full output
-#             echo "    compiling results..."
-#             cd /scratch/bell/dryals/pipeline/aim
-#             #this will hold all the aims
-#             cat chr*/LDremove.txt > allLDremove.txt
-#             count=$( wc -l allLDremove.txt | awk '{print $1}')
-#             echo "    marked $count sites"
-#             
-#         echo "    removing pruned sites..."
-#         cd $CLUSTER_SCRATCH/pipeline/plink
-#         #create new admix file
-#         plink --bfile topaim --make-bed --exclude ../aim/allLDremove.txt --silent \
-#             --threads $SLURM_NTASKS --out US1pcadmix
-#     
-#     #use this plink file basename for admix scripts
-#     echo "US1pcadmix" > plink_admix_filename.txt
-#     
-#     
-# echo "plink: pulling references..."  
-#     #for unsupervised reference admix
-#     cd $CLUSTER_SCRATCH/ahb/plink
-#     plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --keep ~/ryals/ahb/references/plink_refs.txt --threads $SLURM_NTASKS --silent --out reference.${version}
-#     
-#     #use this plink file basename for admix scripts
-#     echo "admix.${version}" > plink_admix_filename.txt
-#     #echo "sampadmix" > plink_admix_filename.txt
-#     
-#     #kill script if the above fails
-#     if [ ! -f "admix.${version}.bed" ]; then
-#         echo "Plink Failed!"
-#         exit 1
-#     fi
-# 
-# echo "---------------------"
-# echo "Analysis"
-# echo "---------------------"
-#     
-#     
-# echo "starting admix..."
-#     cd /scratch/bell/dryals/ahb
-#     mkdir -p admix
-#     cd admix
-#     mkdir -p unsupervised
-#     mkdir -p supervised
-#   
-#     #supervised
-#         #create pop file
-#         cd /home/dryals/ryals/ahb
-#         R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
-#         sleep 5
-#         sbatch supervised_admix_v3.sh
-#     
+            #wait
+            echo "    waiting for pruning (see prune.out)..."
+            while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+            do
+                sleep 20 #wait between each check
+            done
+            
+            #create full output
+            echo "    compiling results..."
+            cd $CLUSTER_SCRATCH/ahb/aim
+            #this will hold all the aims
+            cat chr*/LDremove.txt > allLDremove.txt
+            count=$( wc -l allLDremove.txt | awk '{print $1}')
+            echo "    marked $count sites"
+            
+        echo "    removing pruned sites..."
+        cd $CLUSTER_SCRATCH/ahb/plink
+        #create new admix file
+        plink --bfile topaim.${version} --make-bed --exclude ../aim/allLDremove.txt --silent \
+            --threads $SLURM_NTASKS --out admix.${version}
+    
+    #use this plink file basename for admix scripts
+    echo "admix.${version}" > plink_admix_filename.txt
+    
+    
+echo "plink: pulling references..."  
+    #for unsupervised reference admix
+    cd $CLUSTER_SCRATCH/ahb/plink
+    plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
+        --keep ~/ryals/ahb/references/plink_refs.txt --threads $SLURM_NTASKS --silent --out reference.${version}
+    
+    #kill script if the above fails
+    if [ ! -f "admix.${version}.bed" ]; then
+        echo "Plink Failed!"
+        exit 1
+    fi
+
+echo "---------------------"
+echo "Analysis"
+echo "---------------------"
+    
+    
+echo "starting admix..."
+    cd /scratch/bell/dryals/ahb
+    mkdir -p admix
+    cd admix
+    mkdir -p unsupervised
+    mkdir -p supervised
+  
+    #supervised
+        #create pop file
+        cd /home/dryals/ryals/ahb
+        R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
+        sleep 5
+        sbatch supervised_admix_v3.sh
+    
 # echo "plink: generating PCA..."
 #     cd $CLUSTER_SCRATCH/ahb
 #     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
@@ -231,6 +228,9 @@ echo "plink: filtering whole file for AIMs ..."
 # 
 #     #WARNING: this will break if an admix file already exisit for the version
 #     #wait for admix to finish
+        #replace filename for admix target
+        
+        #echo "sampadmix" > plink_admix_filename.txt
 #     cd $CLUSTER_SCRATCH/admix/supervised
 #     while [ ! -f "admix.${version}.4.Q" ] \
 #     do
