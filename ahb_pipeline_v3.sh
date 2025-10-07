@@ -90,10 +90,10 @@ module load biocontainers bcftools plink r
 #         exit 1
 #     fi
 #    
-echo "---------------------"
-echo "selecting sites"
-echo "---------------------"
-   
+# echo "---------------------"
+# echo "selecting sites"
+# echo "---------------------"
+#    
 # echo "launching Ia script"
 #     #count number of samples in each population
 #     cd /home/dryals/ryals/ahb/references
@@ -125,22 +125,22 @@ echo "---------------------"
 #     done
 #     echo ""
 #     
-echo "compiling Ia results..."    
-    cd /scratch/bell/dryals/ahb/aim
-    #this will hold all the aims
-    cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.ia.txt
-
-    #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
-
-   
-    #output top sites in plink format -- chr:pos
-        #awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
-    #IA greater than zero
-    grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
-    
-    count=$( wc -l aim.ia.txt | awk '{print $1}')
-    echo "    Calculated Ia for $count sites"
-    
+# echo "compiling Ia results..."    
+#     cd /scratch/bell/dryals/ahb/aim
+#     #this will hold all the aims
+#     cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.ia.txt
+# 
+#     #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
+# 
+#    
+#     #output top sites in plink format -- chr:pos
+#         #awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
+#     #IA greater than zero
+#     grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
+#     
+#     count=$( wc -l aim.ia.txt | awk '{print $1}')
+#     echo "    Calculated Ia for $count sites"
+#     
 #     
 # echo "plink: filtering whole file for AIMs ..."    
 #     cd $CLUSTER_SCRATCH/ahb
@@ -158,68 +158,68 @@ echo "compiling Ia results..."
 #             --remove /home/dryals/ryals/ahb/references/plink_refs.txt \
 #             --silent --threads $SLURM_NTASKS --out preprune
 #             
-        #run R script to generate best set of sites by Ia
-            #reset logfile
-            cd ~/ryals/ahb
-            echo -n "" > outputs/prune.out
-            #start
-            sbatch --array=1-16 prune_array.sh
-            #wait
-            echo "    waiting for pruning (see prune.out)..."
-            while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-            do
-                sleep 20 #wait between each check
-            done
-            
-            #create full output
-            echo "    compiling results..."
-            cd $CLUSTER_SCRATCH/ahb/aim
-            #this will hold all the aims
-            cat chr*/LDremove.txt > allLDremove.txt
-            count=$( wc -l allLDremove.txt | awk '{print $1}')
-            echo "    marked $count sites"
-            
-        echo "    removing pruned sites..."
-        cd $CLUSTER_SCRATCH/ahb/plink
-        #create new admix file
-        plink --bfile topaim.${version} --make-bed --exclude ../aim/allLDremove.txt --silent \
-            --threads $SLURM_NTASKS --out admix.${version}
-    
-    #use this plink file basename for admix scripts
-    echo "admix.${version}" > plink_admix_filename.txt
-    
-    
-echo "plink: pulling references..."  
-    #for unsupervised reference admix
-    cd $CLUSTER_SCRATCH/ahb/plink
-    plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
-        --keep ~/ryals/ahb/references/plink_refs.txt --threads $SLURM_NTASKS --silent --out reference.${version}
-    
-    #kill script if the above fails
-    if [ ! -f "admix.${version}.bed" ]; then
-        echo "Plink Failed!"
-        exit 1
-    fi
-
+#         #run R script to generate best set of sites by Ia
+#             #reset logfile
+#             cd ~/ryals/ahb
+#             echo -n "" > outputs/prune.out
+#             #start
+#             sbatch --array=1-16 prune_array.sh
+#             #wait
+#             echo "    waiting for pruning (see prune.out)..."
+#             while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+#             do
+#                 sleep 20 #wait between each check
+#             done
+#             
+#             #create full output
+#             echo "    compiling results..."
+#             cd $CLUSTER_SCRATCH/ahb/aim
+#             #this will hold all the aims
+#             cat chr*/LDremove.txt > allLDremove.txt
+#             count=$( wc -l allLDremove.txt | awk '{print $1}')
+#             echo "    marked $count sites"
+#             
+#         echo "    removing pruned sites..."
+#         cd $CLUSTER_SCRATCH/ahb/plink
+#         #create new admix file
+#         plink --bfile topaim.${version} --make-bed --exclude ../aim/allLDremove.txt --silent \
+#             --threads $SLURM_NTASKS --out admix.${version}
+#     
+#     #use this plink file basename for admix scripts
+#     echo "admix.${version}" > plink_admix_filename.txt
+#     
+#     
+# echo "plink: pulling references..."  
+#     #for unsupervised reference admix
+#     cd $CLUSTER_SCRATCH/ahb/plink
+#     plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
+#         --keep ~/ryals/ahb/references/plink_refs.txt --threads $SLURM_NTASKS --silent --out reference.${version}
+#     
+#     #kill script if the above fails
+#     if [ ! -f "admix.${version}.bed" ]; then
+#         echo "Plink Failed!"
+#         exit 1
+#     fi
+# 
 echo "---------------------"
 echo "Analysis"
 echo "---------------------"
-    
-    
-echo "starting admix..."
-    cd /scratch/bell/dryals/ahb
-    mkdir -p admix
-    cd admix
-    mkdir -p unsupervised
-    mkdir -p supervised
-  
-    #supervised
-        #create pop file
-        cd /home/dryals/ryals/ahb
-        R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
-        sleep 5
-        sbatch supervised_admix_v3.sh
-    
+#     
+#     
+# echo "starting admix..."
+#     cd /scratch/bell/dryals/ahb
+#     mkdir -p admix
+#     cd admix
+#     mkdir -p unsupervised
+#     mkdir -p supervised
+#   
+#     #supervised
+#         #create pop file
+#         cd /home/dryals/ryals/ahb
+#         R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
+#         sleep 5
+#         sbatch supervised_admix_v3.sh
+#     
 echo "plink: generating PCA..."
     cd $CLUSTER_SCRATCH/ahb
     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
@@ -229,7 +229,7 @@ echo "plink: generating PCA..."
 echo "starting reference admix..."
 
     #WARNING: this will break if an admix file already exisit for the version
-    cd $CLUSTER_SCRATCH/admix/supervised
+    cd $CLUSTER_SCRATCH/ahb/admix/supervised
     while [ ! -f "admix.${version}.4.Q" ] \
     do
         sleep 10 #wait between each check
