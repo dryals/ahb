@@ -39,5 +39,5 @@ echo "$n DONE" >> $log
 #run this later to pull CV values from logs 
 #grep "CV" admix*out | awk '{print $3,$4}' | sed -e 's/(//;s/)//;s/://;s/K=//' > cv.txt
 
-#grep "CV" admix.99.?.out | awk '{print $3,$4}' | sed -e 's/(//;s/)//;s/://;s/K=//' > cv99.txt
+#grep "CV" reference*out | awk '{print $3,$4}' | sed -e 's/(//;s/)//;s/://;s/K=//' > cvREF.txt
 

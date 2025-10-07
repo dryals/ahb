@@ -19,19 +19,24 @@ reffam = read.table("references/refData.txt", header = T, sep = "\t") %>%
   reffam$harpur = grepl("^.[0-9]{3}$", reffam$DOGANTID)
 
 #additional sample info
-ref.info = read_excel("references/sciadv.abj2151_data_s1_to_s3 4.xlsx", 
+ref.info = read_excel("references/sciadv.abj2151_data_s1_to_s3 4.xlsx",
                      sheet = "Data S1", range = "A2:P268")
   include = ref.info %>% filter(`Subspseices Assignment / Exclusions` != "Excluded")
-  
+
 #just keep included samples
   reffam = reffam %>% filter(DOGANTID %in% include$`Sample ID` | harpur)
+  reffam %>% group_by(lineage) %>% summarise(n= n())
   
+#just keep pure samples (>90% lineage assignment)
+  refadmix = read.delim("data/reference.oct25.4.Q", header = F, sep ="")
+  refadmix$max = apply(refadmix, 1, max)
+  refadmix$id = read.delim("data/reference.oct25.fam", sep = "", header = F)[,1]
+  pure = refadmix$id[refadmix$max > 0.9]
   
-reffam %>% group_by(lineage) %>% summarise(n= n())
-
-
+  reffam = reffam %>% filter(SRR %in% pure)
+  
 #select ~20 references of each lineage
-set.seed(2024)
+set.seed(2025)
 balanced = reffam %>% filter(F)
 rand2 = sample(c(1:sum(reffam$lineage == "O")), 20, replace = F)
 rand3 = sample(c(1:sum(reffam$lineage == "A")), 20, replace = F)
@@ -42,20 +47,21 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
                  (reffam %>% filter(lineage == "A"))[rand3,])
 
 #write out
-# write.table(balanced$SRR, file = "references/all_refs.txt",
-#             quote = F, row.names = F, col.names = F)
-# linu = unique(balanced$lineage)
-# #write lists
-# for(i in 1:length(linu)){
-#   
-#   p = balanced$SRR[which(balanced$lineage == linu[i])]
-#   write.table(p, file = paste0("references/", linu[i], ".txt"),
-#               quote = F, col.names = F, row.names = F)
-#   notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
-#   write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
-#               quote = F, col.names = F, row.names = F)
-#   
-# }
+  write.table(balanced$SRR, file = "references/pureRefs.txt",
+              quote = F, row.names = F, col.names = F)
+  
+  
+#write lists
+linu = unique(balanced$lineage)
+for(i in 1:length(linu)){
+
+  p = balanced$SRR[which(balanced$lineage == linu[i])]
+  write.table(p, file = paste0("references/", linu[i], ".txt"),
+              quote = F, col.names = F, row.names = F)
+  # notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
+  # write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
+  #             quote = F, col.names = F, row.names = F)
+  }
 
 #####
 
@@ -145,7 +151,7 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
 
     
   #with imputation
-  refadmix = cbind( read.delim("data/reference.maf05.4.Q", header = F, sep =""),
+  refadmix = cbind( read.delim("data/reference.oct25.4.Q", header = F, sep =""),
     read.delim("data/reference.maf05.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
     left_join(reffam %>% select(lineage, oldid = SRR))
   
@@ -183,9 +189,9 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   
 
 #connect to most-recent admix run
-  fam = read.delim("data/admix.maf05.fam", sep = "", header = F) %>% select(oldid = V1)
+  fam = read.delim("data/admix.oct25.fam", sep = "", header = F) %>% select(oldid = V1)
   sum(!grepl("SRR", fam$oldid))
-  admix = read.delim("data/admix.maf05.4.Q", header = F, sep ="")
+  admix = read.delim("data/admix.oct25.4.Q", header = F, sep ="")
   admix = cbind(admix, fam) 
   
   #verify lineage identity
@@ -220,30 +226,30 @@ balanced = rbind(reffam %>% filter(lineage == "M"),
   
   #establish populations
   ahb.plot$pop = ahb.plot$state
+  ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "Caribbean"
   ahb.plot$pop = factor(ahb.plot$pop,
-                        levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
+                        levels = c("IN", "PA", "FL","TX", "AZ", "Caribbean"))
   
   
 #write out
-  sharedat = ahb %>% select(-A) %>%
-    left_join(admix %>% select(A, M, C, O, oldid)) %>% 
-    select(sample_name = id, colony_id = id2, state, 
-           mitotype_ATRAM = call, Amito_ATRAM = AmitoBin,
-           Amito_PCR, A, M, C, O)
-  
-  meta = read.delim("../old_ahb/sra/sra_meta.tsv", sep = "\t") 
-  
-  sharedat = sharedat %>% 
-    left_join(meta %>% select(sample_name, R1 = filename, R2 = filename2)) %>% 
-    filter(state != "Jamaica")
-  
-  write.csv(sharedat, "data/share_metadata.csv",
-            quote = F, row.names = F)
+  # sharedat = ahb %>% select(-A) %>%
+  #   left_join(admix %>% select(A, M, C, O, oldid)) %>% 
+  #   select(sample_name = id, colony_id = id2, state, 
+  #          mitotype_ATRAM = call, Amito_ATRAM = AmitoBin,
+  #          Amito_PCR, A, M, C, O)
+  # 
+  # meta = read.delim("../old_ahb/sra/sra_meta.tsv", sep = "\t") 
+  # 
+  # sharedat = sharedat %>% 
+  #   left_join(meta %>% select(sample_name, R1 = filename, R2 = filename2)) %>% 
+  #   filter(state != "Jamaica")
+  # 
+  # write.csv(sharedat, "data/share_metadata.csv",
+  #           quote = F, row.names = F)
   
   
   
 #create model
-  
   ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
   
   ahbmod = glm(AmitoBin ~ pop + A, family = binomial, data = ahb.moddat)

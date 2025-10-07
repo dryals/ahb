@@ -38,9 +38,9 @@ module load biocontainers bcftools plink r
 #### VERSION ###
     
 #     
-# echo "---------------------"
-# echo "filtering"
-# echo "---------------------"
+echo "---------------------"
+echo "filtering"
+echo "---------------------"
 # 
 #     
 # echo "move samples to ahb dir..."
@@ -67,15 +67,36 @@ module load biocontainers bcftools plink r
 #     echo "    indexing..."
 #     bcftools index -c samples.filter.${version}.bcf.gz
 # 
-# echo "creating site list..."
+# echo "creating sample site list..."
 #     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 
-# echo "pulling reference..."
-#     cd $CLUSTER_SCRATCH/ahb
-#     #no multiallelic sites, only snps, keep subset of references, no contigs, rename chromosomes to "1,2,3...16"
-#     bcftools view $refs -S /home/dryals/ryals/ahb/references/all_refs.txt -r $chrsLong -M2 -v snps -Ou | bcftools annotate --rename-chrs $rename --threads $SLURM_NTASKS -Ob -o reference.bcf.gz
-# 
-#     bcftools index -c reference.bcf.gz
+echo "determining appropriate references..."
+    echo "    pulling full reference file..."
+    cd $CLUSTER_SCRATCH/ahb
+#     #no multiallelic sites, only snps, keep subset of references, no contigs
+#     #rename chromosomes to "1,2,3...16"
+#     bcftools view $refs -r $chrsLong -M2 -v snps -Ou | \
+#         bcftools annotate --rename-chrs $rename \
+#         --threads $SLURM_NTASKS -Ob -o allRef.bcf.gz
+
+    bcftools index -c allRef.bcf.gz
+    
+    echo "    loading into plink..."
+    plink --bcf allRef.bcf.gz --make-bed \
+        --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# \
+        --bp-space 2000 \
+        --threads $SLURM_NTASKS \
+        --out plink/allRefThin
+    
+    echo "    running admixture..."
+    ADMIX=/home/dryals/bharpur/apps/admixture/admixture   
+    cd $CLUSTER_SCRATCH/admix/unsupervised
+    $ADMIX --cv=20 $CLUSTER_SCRATCH/ahb/plink/allRefThin.bed 4 \
+        -j${SLURM_NTASKS} > allRefThin.4.out
+    
+    #WARNING: run ahb_analysis.R to output lists of pure samples...
+
+
 # 
 # echo "filtering references..."
 # #filter references to informative sites
@@ -201,9 +222,9 @@ module load biocontainers bcftools plink r
 #         exit 1
 #     fi
 # 
-echo "---------------------"
-echo "Analysis"
-echo "---------------------"
+# echo "---------------------"
+# echo "Analysis"
+# echo "---------------------"
 #     
 #     
 # echo "starting admix..."
@@ -220,29 +241,29 @@ echo "---------------------"
 #         sleep 5
 #         sbatch supervised_admix_v3.sh
 #     
-echo "plink: generating PCA..."
-    cd $CLUSTER_SCRATCH/ahb
-    plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
-    
-    plink --bcf admix.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --silent --threads $SLURM_NTASKS --maf 0.05 --pca 500 --out plink/all.${version}
-
-echo "starting reference admix..."
-
-    #WARNING: this will break if an admix file already exisit for the version
-    cd $CLUSTER_SCRATCH/ahb/admix/supervised
-    while [ ! -f "admix.${version}.4.Q" ] \
-    do
-        sleep 10 #wait between each check
-    done
-    
-    #overwrite baseneame
-    cd $CLUSTER_SCRATCH/ahb/plink
-    echo "reference.${version}" > plink_admix_filename.txt
-    #reset log file
-    cd /home/dryals/ryals/ahb
-    echo -n "" > outputs/usadmix.out
-    #launch the admixture array
-    sbatch --array=2-9 unsupervised_v3.sh
+# echo "plink: generating PCA..."
+#     cd $CLUSTER_SCRATCH/ahb
+#     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
+#     
+#     plink --bcf admix.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --silent --threads $SLURM_NTASKS --maf 0.05 --pca 500 --out plink/all.${version}
+# 
+# echo "starting reference admix..."
+# 
+#     #WARNING: this will break if an admix file already exisit for the version
+#     cd $CLUSTER_SCRATCH/ahb/admix/supervised
+#     while [ ! -f "admix.${version}.4.Q" ] 
+#     do
+#         sleep 10 #wait between each check
+#     done
+#     
+#     #overwrite baseneame
+#     cd $CLUSTER_SCRATCH/ahb/plink
+#     echo "reference.${version}" > plink_admix_filename.txt
+#     #reset log file
+#     cd /home/dryals/ryals/ahb
+#     echo -n "" > outputs/usadmix.out
+#     #launch the admixture array
+#     sbatch --array=2-9 unsupervised_v3.sh
 #     
 #ending output
 echo "---------------------"
