@@ -61,7 +61,7 @@ echo "filtering samples..."
     #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
     bcftools filter ahbsamples.allsites.bcf.gz -S . \
     -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
-    bcftools view -q 0.1:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
+    bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
     -Ob -o samples.filter.${version}.bcf.gz
     
     echo "    indexing..."
@@ -158,32 +158,32 @@ echo "plink: filtering whole file for AIMs ..."
             echo -n "" > outputs/prune.out
             #start
             sbatch --array=1-16 prune_array.sh
-            #wait
-            echo "    waiting for pruning (see prune.out)..."
-            while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-            do
-                sleep 20 #wait between each check
-            done
-            
-            ##### more editing #####
-            
-            
-            #create full output
-            echo "    compiling results..."
-            cd /scratch/bell/dryals/pipeline/aim
-            #this will hold all the aims
-            cat chr*/LDremove.txt > allLDremove.txt
-            count=$( wc -l allLDremove.txt | awk '{print $1}')
-            echo "    marked $count sites"
-            
-        echo "    removing pruned sites..."
-        cd $CLUSTER_SCRATCH/pipeline/plink
-        #create new admix file
-        plink --bfile topaim --make-bed --exclude ../aim/allLDremove.txt --silent \
-            --threads $SLURM_NTASKS --out US1pcadmix
-    
-    #use this plink file basename for admix scripts
-    echo "US1pcadmix" > plink_admix_filename.txt
+#             #wait
+#             echo "    waiting for pruning (see prune.out)..."
+#             while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+#             do
+#                 sleep 20 #wait between each check
+#             done
+#             
+#             ##### more editing #####
+#             
+#             
+#             #create full output
+#             echo "    compiling results..."
+#             cd /scratch/bell/dryals/pipeline/aim
+#             #this will hold all the aims
+#             cat chr*/LDremove.txt > allLDremove.txt
+#             count=$( wc -l allLDremove.txt | awk '{print $1}')
+#             echo "    marked $count sites"
+#             
+#         echo "    removing pruned sites..."
+#         cd $CLUSTER_SCRATCH/pipeline/plink
+#         #create new admix file
+#         plink --bfile topaim --make-bed --exclude ../aim/allLDremove.txt --silent \
+#             --threads $SLURM_NTASKS --out US1pcadmix
+#     
+#     #use this plink file basename for admix scripts
+#     echo "US1pcadmix" > plink_admix_filename.txt
 #     
 #     
 # echo "plink: pulling references..."  
