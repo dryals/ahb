@@ -89,13 +89,13 @@ echo "determining appropriate references..."
 #         --threads $SLURM_NTASKS \
 #         --out plink/allRefThin
 #     
-    echo "    running admixture..."
-    ADMIX=/home/dryals/bharpur/apps/admixture/admixture   
-    cd $CLUSTER_SCRATCH/ahb/admix/unsupervised
-    $ADMIX --cv=20 $CLUSTER_SCRATCH/ahb/plink/allRefThin.bed 4 \
-        -j${SLURM_NTASKS} > allRefThin.4.out
-    
-    #WARNING: run ahb_analysis.R to output lists of pure samples...
+#     echo "    running admixture..."
+#     ADMIX=/home/dryals/bharpur/apps/admixture/admixture   
+#     cd $CLUSTER_SCRATCH/ahb/admix/unsupervised
+#     $ADMIX --cv=20 $CLUSTER_SCRATCH/ahb/plink/allRefThin.bed 4 \
+#         -j${SLURM_NTASKS} > allRefThin.4.out
+#     
+#     #WARNING: run ahb_analysis.R to output lists of pure samples...
 
 echo "filtering references..."
 #filter references to informative sites
