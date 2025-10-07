@@ -70,12 +70,12 @@ echo "filtering samples..."
 echo "creating site list..."
     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 
-echo "pulling reference..."
-    cd $CLUSTER_SCRATCH/ahb
-    #no multiallelic sites, only snps, keep subset of references, no contigs, rename chromosomes to "1,2,3...16"
-    bcftools view $refs -S /home/dryals/ryals/ahb/references/all_refs.txt -r $chrsLong -M2 -v snps -Ou | bcftools annotate --rename-chrs $rename --threads $SLURM_NTASKS -Ob -o reference.bcf.gz
-
-    bcftools index -c reference.bcf.gz
+# echo "pulling reference..."
+#     cd $CLUSTER_SCRATCH/ahb
+#     #no multiallelic sites, only snps, keep subset of references, no contigs, rename chromosomes to "1,2,3...16"
+#     bcftools view $refs -S /home/dryals/ryals/ahb/references/all_refs.txt -r $chrsLong -M2 -v snps -Ou | bcftools annotate --rename-chrs $rename --threads $SLURM_NTASKS -Ob -o reference.bcf.gz
+# 
+#     bcftools index -c reference.bcf.gz
 
 echo "filtering references..."
 #filter references to informative sites
