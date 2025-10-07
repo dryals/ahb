@@ -71,97 +71,99 @@ echo "---------------------"
 #     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 
 echo "determining appropriate references..."
-    echo "    pulling full reference file..."
-    cd $CLUSTER_SCRATCH/ahb
+#     echo "    pulling full reference file..."
+#     cd $CLUSTER_SCRATCH/ahb
 #     #no multiallelic sites, only snps, keep subset of references, no contigs
 #     #rename chromosomes to "1,2,3...16"
+#       #quite big, ~17M sites
 #     bcftools view $refs -r $chrsLong -M2 -v snps -Ou | \
 #         bcftools annotate --rename-chrs $rename \
 #         --threads $SLURM_NTASKS -Ob -o allRef.bcf.gz
-
-    bcftools index -c allRef.bcf.gz
-    
-    echo "    loading into plink..."
-    plink --bcf allRef.bcf.gz --make-bed \
-        --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# \
-        --bp-space 2000 \
-        --threads $SLURM_NTASKS \
-        --out plink/allRefThin
-    
+# 
+#     bcftools index -c allRef.bcf.gz
+#     
+#     echo "    loading into plink..."
+#     plink --bcf allRef.bcf.gz --make-bed \
+#         --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# \
+#         --bp-space 2000 \
+#         --threads $SLURM_NTASKS \
+#         --out plink/allRefThin
+#     
     echo "    running admixture..."
     ADMIX=/home/dryals/bharpur/apps/admixture/admixture   
-    cd $CLUSTER_SCRATCH/admix/unsupervised
+    cd $CLUSTER_SCRATCH/ahb/admix/unsupervised
     $ADMIX --cv=20 $CLUSTER_SCRATCH/ahb/plink/allRefThin.bed 4 \
         -j${SLURM_NTASKS} > allRefThin.4.out
     
     #WARNING: run ahb_analysis.R to output lists of pure samples...
 
+echo "filtering references..."
+#filter references to informative sites
+    cd $CLUSTER_SCRATCH/ahb
+    bcftools view allRef.bcf.gz \
+    -T plink/samples.${version}.sites -S ~/ryals/ahb/references/pureRefs.txt \
+        --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
+        
+    echo "  indexing..."
+    bcftools index -c reference.filter.${version}.bcf.gz
+    
+    #kill script if the above fails
+    if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
+        echo "Filters Failed!"
+        exit 1
+    fi
+   
+echo "---------------------"
+echo "selecting sites"
+echo "---------------------"
+   
+echo "launching Ia script"
+    #count number of samples in each population
+    cd /home/dryals/ryals/ahb/references
+    wc -l ?.txt | awk '{print $1}' > refN.txt
+    #reset logifle
+    cd /home/dryals/ryals/ahb
+    mkdir -p aim
+    echo -n "" > outputs/aim.out
+    #specify reference file
+    echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
+    #launch the admixture array
+    sbatch --array=1-16 AIM_v3.sh
 
-# 
-# echo "filtering references..."
-# #filter references to informative sites
-#     cd $CLUSTER_SCRATCH/ahb
-#     bcftools view reference.bcf.gz -T plink/samples.${version}.sites --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
-#     echo "  indexing..."
-#     bcftools index -c reference.filter.${version}.bcf.gz
-#     
-#     #kill script if the above fails
-#     if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
-#         echo "Filters Failed!"
-#         exit 1
-#     fi
-#    
-# echo "---------------------"
-# echo "selecting sites"
-# echo "---------------------"
-#    
-# echo "launching Ia script"
-#     #count number of samples in each population
-#     cd /home/dryals/ryals/ahb/references
-#     wc -l ?.txt | awk '{print $1}' > refN.txt
-#     #reset logifle
-#     cd /home/dryals/ryals/ahb
-#     mkdir -p aim
-#     echo -n "" > outputs/aim.out
-#     #specify reference file
-#     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
-#     #launch the admixture array
-#     sbatch --array=1-16 AIM_v3.sh
-# 
-# echo "merging samples and references..."
-#     cd /scratch/bell/dryals/ahb
-#     #merge and remove new multialleles
-#     bcftools merge reference.filter.${version}.bcf.gz samples.filter.${version}.bcf.gz -m snps -Ou | \
-#         bcftools norm -m +snps -Ou | bcftools view -M2 -m2 --threads $SLURM_NTASKS \
-#         -Ob -o admix.${version}.bcf.gz
-#     echo "  indexing..."
-#     bcftools index -c admix.${version}.bcf.gz
-# 
-# #wait for Ia calculation to finish if it hasn't already
-# echo "waiting for Ia results (see aim.out)..."
-#     cd /home/dryals/ryals/ahb
-#     while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-#     do
-#         sleep 10 #wait between each check
-#     done
-#     echo ""
-#     
-# echo "compiling Ia results..."    
-#     cd /scratch/bell/dryals/ahb/aim
-#     #this will hold all the aims
-#     cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.ia.txt
-# 
-#     #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
-# 
-#    
-#     #output top sites in plink format -- chr:pos
-#         #awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
-#     #IA greater than zero
-#     grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' > plink_aim.${version}.txt
-#     
-#     count=$( wc -l aim.ia.txt | awk '{print $1}')
-#     echo "    Calculated Ia for $count sites"
-#     
+echo "merging samples and references..."
+    cd /scratch/bell/dryals/ahb
+    #merge and remove new multialleles
+    bcftools merge reference.filter.${version}.bcf.gz samples.filter.${version}.bcf.gz -m snps -Ou | \
+        bcftools norm -m +snps -Ou | bcftools view -M2 -m2 --threads $SLURM_NTASKS \
+        -Ob -o admix.${version}.bcf.gz
+    echo "  indexing..."
+    bcftools index -c admix.${version}.bcf.gz
+
+#wait for Ia calculation to finish if it hasn't already
+echo "waiting for Ia results (see aim.out)..."
+    cd /home/dryals/ryals/ahb
+    while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+    do
+        sleep 10 #wait between each check
+    done
+    echo ""
+    
+echo "compiling Ia results..."    
+    cd /scratch/bell/dryals/ahb/aim
+    #this will hold all the aims
+    cat chr*/chr*.ia | grep -v "chr" | sort -k3 -gr > aim.ia.txt
+
+    #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
+
+    #output top sites in plink format -- chr:pos
+        #awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
+    #IA greater than zero
+    grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' \
+        > plink_aim.${version}.txt
+    
+    count=$( wc -l aim.ia.txt | awk '{print $1}')
+    echo "    Calculated Ia for $count sites"
+    
 #     
 # echo "plink: filtering whole file for AIMs ..."    
 #     cd $CLUSTER_SCRATCH/ahb
