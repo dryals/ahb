@@ -92,22 +92,22 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
                  reffam.pure %>% filter(lineage == "O"),
                  (reffam.pure %>% filter(lineage == "A"))[rand1,])
 
-#write out
-  write.table(balanced$SRR, file = "references/pureRefs.txt",
-              quote = F, row.names = F, col.names = F)
-  
-  
-#write lists
-linu = unique(balanced$lineage)
-for(i in 1:length(linu)){
-
-  p = balanced$SRR[which(balanced$lineage == linu[i])]
-  write.table(p, file = paste0("references/", linu[i], ".txt"),
-              quote = F, col.names = F, row.names = F)
-  # notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
-  # write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
-  #             quote = F, col.names = F, row.names = F)
-  }
+# #write out
+#   write.table(balanced$SRR, file = "references/pureRefs.txt",
+#               quote = F, row.names = F, col.names = F)
+#   
+#   
+# #write lists
+# linu = unique(balanced$lineage)
+# for(i in 1:length(linu)){
+# 
+#   p = balanced$SRR[which(balanced$lineage == linu[i])]
+#   write.table(p, file = paste0("references/", linu[i], ".txt"),
+#               quote = F, col.names = F, row.names = F)
+#   # notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
+#   # write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
+#   #             quote = F, col.names = F, row.names = F)
+#   }
 
 #####
 
@@ -174,8 +174,8 @@ for(i in 1:length(linu)){
 #####
   
   #real observations: without imputation
-  refadmix.unimpt = cbind( read.delim("data/allRefThin2.4.Q", header = F, sep =""),
-                    read.delim("data/allRefThin2.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+  refadmix.unimpt = cbind( read.delim("data/reference.unimpt.4.Q", header = F, sep =""),
+                    read.delim("data/reference.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
     left_join(reffam %>% select(lineage, oldid = SRR))
   
     refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
@@ -188,7 +188,7 @@ for(i in 1:length(linu)){
                       facet_grid(cols = vars(lineage), scales = "free_x") +
                       scale_fill_brewer(palette = "PRGn") +
                       labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
-                           title = "Unimputed Sites") + 
+                           title = "Unimputed Sites n=653") + 
                       theme_bw() + 
                       theme(axis.text.x = element_blank(),
                             axis.ticks.x = element_blank(),
@@ -211,7 +211,7 @@ for(i in 1:length(linu)){
                     facet_grid(cols = vars(lineage), scales = "free_x") +
                     scale_fill_brewer(palette = "PRGn") +
                     labs(x = "reference genomes", y = NULL, fill = "Ancestry\nComponents",
-                         title = "Imputed Sites") + 
+                         title = "Imputed Sites n=30199") + 
                     theme_bw() + 
                     theme(axis.text.x = element_blank(),
                           axis.ticks.x = element_blank(),
@@ -272,9 +272,9 @@ for(i in 1:length(linu)){
   
   #establish populations
   ahb.plot$pop = ahb.plot$state
-  ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "Caribbean"
+  ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "CAR"
   ahb.plot$pop = factor(ahb.plot$pop,
-                        levels = c("IN", "PA", "FL","TX", "AZ", "Caribbean"))
+                        levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
   
   
 #write out
@@ -395,7 +395,7 @@ for(i in 1:length(linu)){
           panel.grid.major = element_blank())
   
 #pca
-  pca = read.delim("data/samps.maf05.eigenvec", header = F, sep = " ") %>%
+  pca = read.delim("data/samps.oct25.eigenvec", header = F, sep = " ") %>%
     select(1:5)
   colnames(pca) = c("fam", "oldid", "PC1", "PC2", "PC3")
   pca = pca %>% 
@@ -406,7 +406,7 @@ for(i in 1:length(linu)){
                         levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
   
   #% explained
-  eig = read.delim("data/samps.maf05.eigenval", header = F) %>% filter(V1 > 0)
+  eig = read.delim("data/samps.oct25.eigenval", header = F) %>% filter(V1 > 0)
   eig$x = 1:nrow(eig)
     #ggplot(eig, aes(y = V1, x = x)) + geom_point()
   
@@ -429,12 +429,12 @@ for(i in 1:length(linu)){
 #all pca
   #load data
   #ahb4 = read.csv("AHBmeta4.csv") %>% rename(oldid = gencove_id)
-  allpca = read.delim("data/all.maf05.eigenvec", header = F, sep = " ") %>%
+  allpca = read.delim("data/all.oct25.eigenvec", header = F, sep = " ") %>%
     select(1:5)
   colnames(allpca) = c("fam", "oldid", "PC1", "PC2", "PC3")
   
   #% explained
-  eig = read.delim("data/all.maf05.eigenval", header = F) %>% filter(V1 > 0)
+  eig = read.delim("data/all.oct25.eigenval", header = F) %>% filter(V1 > 0)
   PCev = c(round(eig$V1[1] / sum(eig$V1) * 100, 1),
            round(eig$V1[2] / sum(eig$V1) * 100, 1))
   PCev
@@ -513,8 +513,9 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
     rename(id = `Sample Name`) %>%
     left_join(ahb %>% select(id, state))
   
+    samp.gps$state[samp.gps$state == "Jamaica"] = "CAR"
     samp.gps$state = factor(samp.gps$state,
-                     levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
+                     levels = c("IN", "PA", "FL", "CAR","TX", "AZ"))
   
   #build map limits using max and min values from data (plus a bit of padding)
   map.limits = rbind(range(samp.gps$lon), range(samp.gps$lat))
