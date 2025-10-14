@@ -38,9 +38,9 @@ module load biocontainers bcftools plink r
 #### VERSION ###
     
 #     
-echo "---------------------"
-echo "filtering"
-echo "---------------------"
+# echo "---------------------"
+# echo "filtering"
+# echo "---------------------"
 # 
 #     
 # echo "move samples to ahb dir..."
@@ -115,20 +115,20 @@ echo "---------------------"
 echo "---------------------"
 echo "selecting sites"
 echo "---------------------"
-   
-echo "launching Ia script"
-    #count number of samples in each population
-    cd /home/dryals/ryals/ahb/references
-    wc -l ?.txt | awk '{print $1}' > refN.txt
-    #reset logifle
-    cd /home/dryals/ryals/ahb
-    mkdir -p aim
-    echo -n "" > outputs/aim.out
-    #specify reference file
-    echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
-    #launch the admixture array
-    sbatch --array=1-16 AIM_v3.sh
-
+#    
+# echo "launching Ia script"
+#     #count number of samples in each population
+#     cd /home/dryals/ryals/ahb/references
+#     wc -l ?.txt | awk '{print $1}' > refN.txt
+#     #reset logifle
+#     cd /home/dryals/ryals/ahb
+#     mkdir -p aim
+#     echo -n "" > outputs/aim.out
+#     #specify reference file
+#     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
+#     #launch the admixture array
+#     sbatch --array=1-16 AIM_v3.sh
+# 
 # echo "merging samples and references..."
 #     cd /scratch/bell/dryals/ahb
 #     #merge and remove new multialleles
@@ -137,16 +137,16 @@ echo "launching Ia script"
 #         -Ob -o admix.${version}.bcf.gz
 #     echo "  indexing..."
 #     bcftools index -c admix.${version}.bcf.gz
-
-#wait for Ia calculation to finish if it hasn't already
-echo "waiting for Ia results (see aim.out)..."
-    cd /home/dryals/ryals/ahb
-    while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-    do
-        sleep 10 #wait between each check
-    done
-    echo ""
-    
+# 
+# #wait for Ia calculation to finish if it hasn't already
+# echo "waiting for Ia results (see aim.out)..."
+#     cd /home/dryals/ryals/ahb
+#     while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+#     do
+#         sleep 10 #wait between each check
+#     done
+#     echo ""
+#     
 echo "compiling Ia results..."    
     cd /scratch/bell/dryals/ahb/aim
     #this will hold all the aims
@@ -154,11 +154,11 @@ echo "compiling Ia results..."
 
     #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
     
-#     #output top sites in plink format -- chr:pos
-#         awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 10000 > plink_aim.${version}.txt
-    #IA greater than zero
-    grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' \
-        > plink_aim.${version}.txt
+    #output top sites in plink format -- chr:pos
+        awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 50000 > plink_aim.${version}.txt
+#     #IA greater than zero
+#     grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' \
+#         > plink_aim.${version}.txt
     
     count=$( wc -l aim.ia.txt | awk '{print $1}')
     echo "    Calculated Ia for $count sites"
@@ -189,7 +189,7 @@ echo "plink: filtering whole file for AIMs ..."
             echo "    waiting for pruning (see prune.out)..."
             while [ $(grep "FINISHED" outputs/prune.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
             do
-                sleep 20 #wait between each check
+                sleep 10 #wait between each check
             done
             
             #create full output
