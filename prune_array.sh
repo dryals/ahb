@@ -31,6 +31,7 @@ echo "starting chr $n..." >> $log
 Rscript --vanilla --silent LDprune_p.R $n
 ( flock -x 9 
     echo "FINISHED CHR $n" >> $log
+    echo "    FINISHED CHR $n" >> ~/ryals/ahb/outputs/pipeline.out
 ) 9> ~/ryals/ahb/.PRUNEwritelock
 
 echo "---------------"
