@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# FILENAME: ahb_pipeline_v2.sh
+# FILENAME: unimpt.sh
 
 #SBATCH -A bharpur
 #SBATCH --nodes=1 
 #SBATCH --ntasks=8
 #SBATCH --time=1-00:00:00
 #SBATCH --partition cpu
-#SBATCH --job-name ahb_pipeline_v2.sh
-#SBATCH --output=/home/dryals/ryals/ahb/outputs/pipeline.out
-#SBATCH --error=/home/dryals/ryals/ahb/outputs/pipeline.out
+#SBATCH --job-name unimpt.sh
+#SBATCH --output=/home/dryals/ryals/ahb/outputs/unimpt.out
+#SBATCH --error=/home/dryals/ryals/ahb/outputs/unimpt.out
 
 #Dylan Ryals 15 MAR 2024
-#last edit   30 SEP 2025
+#last edit   14 OCT 2025
 
 #added file versioning 
 #revisions in 2025 
@@ -30,7 +30,7 @@ module load biocontainers bcftools plink r
 #### VERSION ###
     #version will be appended to all filenames to keep versions straight
 
-    version=oct25
+    version=unimpt
 
     echo "---------------------"
     echo "VERSION: $version"
@@ -63,12 +63,22 @@ echo "---------------------"
 #     -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
 #     bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
 #     -Ob -o samples.filter.${version}.bcf.gz
-#     
+
 #     echo "    indexing..."
 #     bcftools index -c samples.filter.${version}.bcf.gz
-# 
-# echo "creating sample site list..."
-#     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
+
+
+#just pull sites with sufficient evidence to call a genotype
+echo "pulling unimputed sites..."
+     bcftools filter samples.filter.oct25.bcf.gz -S . \
+        -i '( FMT/DP > 3 & FMT/RC == 0 ) | ( FMT/DP > 3 & FMT/AC == 0 ) | ( FMT/AC > 0 & FMT/RC > 0)' \
+        -Ou | bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS -Ob -o samples.${version}.bcf.gz
+        
+    echo "    indexing..." 
+     bcftools index -c samples.${version}.bcf.gz
+
+echo "creating sample site list..."
+    bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 # 
 # echo "determining appropriate references..."
 #     echo "    pulling full reference file..."
@@ -227,23 +237,23 @@ echo "Analysis"
 echo "---------------------"
     
     
-echo "starting admix..."
-    cd /scratch/bell/dryals/ahb
-    mkdir -p admix
-    cd admix
-    mkdir -p unsupervised
-    mkdir -p supervised
-  
-    #supervised
-        #create pop file
-        cd /home/dryals/ryals/ahb
-        R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
-        sleep 5
-        sbatch supervised_admix_v3.sh
-        
-        #previous CV with unpure refs: 0.32814
-        #new CV witwh pure refs: 0.33835 LAME
-    
+# echo "starting admix..."
+#     cd /scratch/bell/dryals/ahb
+#     mkdir -p admix
+#     cd admix
+#     mkdir -p unsupervised
+#     mkdir -p supervised
+#   
+#     #supervised
+#         #create pop file
+#         cd /home/dryals/ryals/ahb
+#         R --vanilla --no-save --no-echo --silent < makeAdmixPop.R
+#         sleep 5
+#         sbatch supervised_admix_v3.sh
+#         
+#         #previous CV with unpure refs: 0.32814
+#         #new CV witwh pure refs: 0.33835 LAME
+#     
 echo "plink: generating PCA..."
     cd $CLUSTER_SCRATCH/ahb
     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
@@ -252,13 +262,13 @@ echo "plink: generating PCA..."
 
 echo "starting reference admix..."
 
-    #WARNING: this will break if an admix file already exisit for the version
-    cd $CLUSTER_SCRATCH/ahb/admix/supervised
-    while [ ! -f "admix.${version}.4.Q" ] 
-    do
-        sleep 10 #wait between each check
-    done
-    
+#     #WARNING: this will break if an admix file already exisit for the version
+#     cd $CLUSTER_SCRATCH/ahb/admix/supervised
+#     while [ ! -f "admix.${version}.4.Q" ] 
+#     do
+#         sleep 10 #wait between each check
+#     done
+#     
     #overwrite baseneame
     cd $CLUSTER_SCRATCH/ahb/plink
     echo "reference.${version}" > plink_admix_filename.txt

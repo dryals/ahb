@@ -24,27 +24,73 @@ ref.info = read_excel("references/sciadv.abj2151_data_s1_to_s3 4.xlsx",
   include = ref.info %>% filter(`Subspseices Assignment / Exclusions` != "Excluded")
 
 #just keep included samples
-  reffam = reffam %>% filter(DOGANTID %in% include$`Sample ID` | harpur)
-  reffam %>% group_by(lineage) %>% summarise(n= n())
+  reffam.filter = reffam %>% filter(DOGANTID %in% include$`Sample ID` | harpur)
+# # #just keep AMCO
+# #   reffam.filter = reffam.filter %>% filter(lineage %in% c('A', 'M', 'C', 'O'))
+# #   reffam.filter %>% group_by(lineage) %>% summarise(n= n())
+#   
+#   #write out
+#   write.table(reffam.filter$SRR, file = "references/allAMCO.txt",
+#               quote = F, row.names = F, col.names = F)
+#   
   
 #just keep pure samples (>90% lineage assignment)
-  refadmix = read.delim("data/reference.oct25.4.Q", header = F, sep ="")
+  refadmix = read.delim("data/allRefThin.7.Q", header = F, sep ="")
   refadmix$max = apply(refadmix, 1, max)
-  refadmix$id = read.delim("data/reference.oct25.fam", sep = "", header = F)[,1]
-  pure = refadmix$id[refadmix$max > 0.9]
+  refadmix$id = read.delim("data/allRefThin.fam", sep = "", header = F)[,1]
+  pure = refadmix$id[refadmix$max > 0.85]
   
-  reffam = reffam %>% filter(SRR %in% pure)
+  reffam.pure = reffam.filter %>% 
+    filter(SRR %in% pure, lineage %in% c('A', 'M', 'C', 'O'))
+  
+  table(reffam.pure$lineage)
+  
+#test
+  #real observations: without imputation
+  refadmix.unimpt = cbind( read.delim("data/allRefThin.7.Q", header = F, sep =""),
+                           read.delim("data/allRefThin.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+    left_join(reffam %>% select(lineage, oldid = SRR))
+  
+  refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
+                                                  measure.vars = c("V1", "V2", "V3", "V4", "V5", "V6", "V7"),
+                                                  variable.name = "fam")
+  #bar chart:all
+  ggplot(data = refadmix.unimpt.melt) +
+    geom_bar(aes(x = oldid, y = value, fill = fam), 
+             stat='identity', width = 1) +
+    facet_grid(cols = vars(lineage), scales = "free_x") +
+    scale_fill_brewer(palette = "PRGn") +
+    labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
+         title = "Unimputed Sites") + 
+    theme_bw() + 
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid.major = element_blank(),
+          legend.position = "none")
+  #bar chart:pure
+  ggplot(data = refadmix.unimpt.melt %>% 
+           filter(oldid %in% pure)) +
+    geom_bar(aes(x = oldid, y = value, fill = fam), 
+             stat='identity', width = 1) +
+    facet_grid(cols = vars(lineage), scales = "free_x") +
+    scale_fill_brewer(palette = "PRGn") +
+    labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
+         title = "Unimputed Sites") + 
+    theme_bw() + 
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid.major = element_blank(),
+          legend.position = "none")
   
 #select ~20 references of each lineage
 set.seed(2025)
-balanced = reffam %>% filter(F)
-rand2 = sample(c(1:sum(reffam$lineage == "O")), 20, replace = F)
-rand3 = sample(c(1:sum(reffam$lineage == "A")), 20, replace = F)
+balanced = reffam.pure %>% filter(F)
+rand1 = sample(c(1:sum(reffam.pure$lineage == "A")), 20, replace = F)
 
-balanced = rbind(reffam %>% filter(lineage == "M"),
-                 reffam %>% filter(lineage == "C"),
-                 (reffam %>% filter(lineage == "O"))[rand2,],
-                 (reffam %>% filter(lineage == "A"))[rand3,])
+balanced = rbind(reffam.pure %>% filter(lineage == "M"),
+                 reffam.pure %>% filter(lineage == "C"),
+                 reffam.pure %>% filter(lineage == "O"),
+                 (reffam.pure %>% filter(lineage == "A"))[rand1,])
 
 #write out
   write.table(balanced$SRR, file = "references/pureRefs.txt",
@@ -128,8 +174,8 @@ for(i in 1:length(linu)){
 #####
   
   #real observations: without imputation
-  refadmix.unimpt = cbind( read.delim("data/reference.unimpt.4.Q", header = F, sep =""),
-                    read.delim("data/reference.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+  refadmix.unimpt = cbind( read.delim("data/allRefThin2.4.Q", header = F, sep =""),
+                    read.delim("data/allRefThin2.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
     left_join(reffam %>% select(lineage, oldid = SRR))
   
     refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
@@ -152,7 +198,7 @@ for(i in 1:length(linu)){
     
   #with imputation
   refadmix = cbind( read.delim("data/reference.oct25.4.Q", header = F, sep =""),
-    read.delim("data/reference.maf05.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+    read.delim("data/reference.oct25.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
     left_join(reffam %>% select(lineage, oldid = SRR))
   
   refadmix.melt = refadmix %>% melt(id.vars = c("oldid", "lineage"),
