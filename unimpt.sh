@@ -70,6 +70,7 @@ echo "---------------------"
 
 #just pull sites with sufficient evidence to call a genotype
 echo "pulling unimputed sites..."
+    cd $CLUSTER_SCRATCH/ahb
      bcftools filter samples.filter.oct25.bcf.gz -S . \
         -i '( FMT/DP > 3 & FMT/RC == 0 ) | ( FMT/DP > 3 & FMT/AC == 0 ) | ( FMT/AC > 0 & FMT/RC > 0)' \
         -Ou | bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS -Ob -o samples.${version}.bcf.gz
