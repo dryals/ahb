@@ -394,6 +394,31 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
           axis.ticks.x = element_blank(),
           panel.grid.major = element_blank())
   
+  
+#quick pheno test
+  pheno = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
+                     skip = 1) %>% 
+    select(id = 2, def = Aggression) %>% 
+    mutate(id = toupper(id))
+  
+  pheno$id[pheno$id == "E4 OG"] = "E4OG"
+  pheno$id[pheno$id == "D6"] = "D6-OG"
+  pheno$id[pheno$id == "G10"] = "z-G10"
+  pheno$id[pheno$id == "A21B"] = "A21b"
+  
+  ahb.plot = ahb.plot %>% 
+    left_join(pheno)
+  
+  ggplot(ahb.plot, aes(x = A, y = def)) + 
+    geom_point() + 
+    geom_smooth(method = 'lm')
+  
+  summary(lm(def ~ A, data = ahb.plot))
+    #impt sig: 0.000486
+  #unimpt sig: 0.000184
+  
+  
+  
 #pca
   pca = read.delim("data/samps.oct25.eigenvec", header = F, sep = " ") %>%
     select(1:5)
