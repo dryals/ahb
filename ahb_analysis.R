@@ -188,7 +188,7 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
                       facet_grid(cols = vars(lineage), scales = "free_x") +
                       scale_fill_brewer(palette = "PRGn") +
                       labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
-                           title = "Unimputed Sites n=653") + 
+                           title = "Unimputed Sites n=95") + 
                       theme_bw() + 
                       theme(axis.text.x = element_blank(),
                             axis.ticks.x = element_blank(),
@@ -235,9 +235,9 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
   
 
 #connect to most-recent admix run
-  fam = read.delim("data/admix.oct25.fam", sep = "", header = F) %>% select(oldid = V1)
+  fam = read.delim("data/admix.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)
   sum(!grepl("SRR", fam$oldid))
-  admix = read.delim("data/admix.oct25.4.Q", header = F, sep ="")
+  admix = read.delim("data/admix.unimpt.4.Q", header = F, sep ="")
   admix = cbind(admix, fam) 
   
   #verify lineage identity
@@ -298,7 +298,7 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
 #create model
   ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
   
-  ahbmod = glm(AmitoBin ~ pop + A, family = binomial, data = ahb.moddat)
+  ahbmod = glm(AmitoBin ~ pop * A, family = binomial, data = ahb.moddat)
   summary(ahbmod)$aic
   
     #fit some values
@@ -429,12 +429,12 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
 #all pca
   #load data
   #ahb4 = read.csv("AHBmeta4.csv") %>% rename(oldid = gencove_id)
-  allpca = read.delim("data/all.oct25.eigenvec", header = F, sep = " ") %>%
+  allpca = read.delim("data/all.unimpt.eigenvec", header = F, sep = " ") %>%
     select(1:5)
   colnames(allpca) = c("fam", "oldid", "PC1", "PC2", "PC3")
   
   #% explained
-  eig = read.delim("data/all.oct25.eigenval", header = F) %>% filter(V1 > 0)
+  eig = read.delim("data/all.unimpt.eigenval", header = F) %>% filter(V1 > 0)
   PCev = c(round(eig$V1[1] / sum(eig$V1) * 100, 1),
            round(eig$V1[2] / sum(eig$V1) * 100, 1))
   PCev

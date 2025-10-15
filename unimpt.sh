@@ -232,7 +232,8 @@ echo "plink: pulling references..."
     #for unsupervised reference admix
     cd $CLUSTER_SCRATCH/ahb/plink
     plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
-        --keep ~/ryals/ahb/references/plink_refs.txt --threads $SLURM_NTASKS --silent --out reference.${version}
+        --keep ~/ryals/ahb/references/plink_refs.txt --maf 0.01 --geno 0.01 \
+        --threads $SLURM_NTASKS --silent --out reference.${version}
     
     #kill script if the above fails
     if [ ! -f "admix.${version}.bed" ]; then
