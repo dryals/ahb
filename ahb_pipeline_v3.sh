@@ -154,11 +154,11 @@ echo "compiling Ia results..."
 
     #TODO: verify Ia is calculated correctly, investigate NA's (equally dispersed across genome?)
     
-    #output top sites in plink format -- chr:pos
-        awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 2000 > plink_aim.${version}.txt
-#     #IA greater than zero
-#     grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' \
-#         > plink_aim.${version}.txt
+#     #output top sites in plink format -- chr:pos
+#         awk 'OFS=":" {print$1, $2}' aim.ia.txt | head -n 2000 > plink_aim.${version}.txt
+    #IA greater than zero
+    grep -v "NA" aim.ia.txt | awk '$3>0' | awk 'OFS=":" {print$1, $2}' \
+        > plink_aim.${version}.txt
     
     count=$( wc -l aim.ia.txt | awk '{print $1}')
     echo "    Calculated Ia for $count sites"
