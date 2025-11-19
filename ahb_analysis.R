@@ -1,118 +1,154 @@
-library(purrr)
-library(tidyverse)
-library(reshape2)
-library(readxl)
-library(cowplot)
-library(usmap)
-select = dplyr::select
-
-setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
-
-
-#choose references
+#####
+# load libraries and setup
 #####
 
-#reference ID's on vcf
-reffam = read.table("references/refData.txt", header = T, sep = "\t") %>%
-  filter(lineage != "ACER")
-  #harpurPNAS samples
-  reffam$harpur = grepl("^.[0-9]{3}$", reffam$DOGANTID)
+  library(purrr)
+  library(tidyverse)
+  library(reshape2)
+  library(readxl)
+  library(cowplot)
+  library(usmap)
+  library(rnaturalearth)
+  library(sf)
+  library(ggspatial)
+  
+  select = dplyr::select
+  theme_set(theme_bw())
+  
+  setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
 
-#additional sample info
-ref.info = read_excel("references/sciadv.abj2151_data_s1_to_s3 4.xlsx",
-                     sheet = "Data S1", range = "A2:P268")
-  include = ref.info %>% filter(`Subspseices Assignment / Exclusions` != "Excluded")
+#TODO:
+  # full PCA figure
+  
+#####
+# concordance figure
+#####
+  
+  
+gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
+  colnames(gconc) = tolower(colnames(gconc))
+  
+  ggplot(gconc, aes(x = concordance)) + 
+    geom_histogram(binwidth = 0.05) + 
+    labs(y = "samples (count)", x = "concordance rate",
+         title = "Concordance: 10x versus 4x imputed")
 
-#just keep included samples
-  reffam.filter = reffam %>% filter(DOGANTID %in% include$`Sample ID` | harpur)
-# # #just keep AMCO
-# #   reffam.filter = reffam.filter %>% filter(lineage %in% c('A', 'M', 'C', 'O'))
-# #   reffam.filter %>% group_by(lineage) %>% summarise(n= n())
-#   
-#   #write out
-#   write.table(reffam.filter$SRR, file = "references/allAMCO.txt",
-#               quote = F, row.names = F, col.names = F)
-#   
+
+#####
+# choose references
+#####
   
-#just keep pure samples (>90% lineage assignment)
-  refadmix = read.delim("data/allRefThin.7.Q", header = F, sep ="")
-  refadmix$max = apply(refadmix, 1, max)
-  refadmix$id = read.delim("data/allRefThin.fam", sep = "", header = F)[,1]
-  pure = refadmix$id[refadmix$max > 0.85]
+  #reference ID's on vcf
+  reffam = read.table("references/refData.txt", header = T, sep = "\t") %>%
+    filter(lineage != "ACER")
+    #harpurPNAS samples
+    reffam$harpur = grepl("^.[0-9]{3}$", reffam$DOGANTID)
   
-  reffam.pure = reffam.filter %>% 
-    filter(SRR %in% pure, lineage %in% c('A', 'M', 'C', 'O'))
+  #additional sample info
+  ref.info = read_excel("references/sciadv.abj2151_data_s1_to_s3 4.xlsx",
+                       sheet = "Data S1", range = "A2:P268")
+    include = ref.info %>% filter(`Subspseices Assignment / Exclusions` != "Excluded")
   
-  table(reffam.pure$lineage)
+  #just keep included samples
+    reffam.filter = reffam %>% filter(DOGANTID %in% include$`Sample ID` | harpur)
+  # # #just keep AMCO
+  # #   reffam.filter = reffam.filter %>% filter(lineage %in% c('A', 'M', 'C', 'O'))
+  # #   reffam.filter %>% group_by(lineage) %>% summarise(n= n())
+  #   
+  #   #write out
+  #   write.table(reffam.filter$SRR, file = "references/allAMCO.txt",
+  #               quote = F, row.names = F, col.names = F)
+  #   
+    
+  #just keep pure samples (>90% lineage assignment)
+    refadmix = read.delim("data/allRefThin.7.Q", header = F, sep ="")
+    refadmix$max = apply(refadmix, 1, max)
+    refadmix$id = read.delim("data/allRefThin.fam", sep = "", header = F)[,1]
+    pure = refadmix$id[refadmix$max > 0.85]
+    
+    reffam.pure = reffam.filter %>% 
+      filter(SRR %in% pure, lineage %in% c('A', 'M', 'C', 'O'))
+    
+    table(reffam.pure$lineage)
+    
+  #test
+    #real observations: without imputation
+    refadmix.unimpt = cbind( read.delim("data/allRefThin.7.Q", header = F, sep =""),
+                             read.delim("data/allRefThin.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+      left_join(reffam %>% select(lineage, oldid = SRR))
+    
+    refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
+                                                    measure.vars = c("V1", "V2", "V3", "V4", "V5", "V6", "V7"),
+                                                    variable.name = "fam")
+    #bar chart:all
+    p.allref = refadmix.unimpt.melt %>% filter(!is.na(lineage)) %>% 
+    ggplot( ) +
+      geom_bar(aes(x = oldid, y = value, fill = fam), 
+               stat='identity', width = 1) +
+      facet_grid(cols = vars(lineage), scales = "free_x") +
+      scale_fill_brewer(palette = "PRGn") +
+      labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
+           title = "All References") + 
+      theme_bw() + 
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            panel.grid.major = element_blank(),
+            legend.position = "none")
+    
+    
+  #select ~20 references of each lineage
+  set.seed(2025)
+  balanced = reffam.pure %>% filter(F)
+  rand1 = sample(c(1:sum(reffam.pure$lineage == "A")), 20, replace = F)
   
-#test
-  #real observations: without imputation
-  refadmix.unimpt = cbind( read.delim("data/allRefThin.7.Q", header = F, sep =""),
-                           read.delim("data/allRefThin.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
-    left_join(reffam %>% select(lineage, oldid = SRR))
+  balanced = rbind(reffam.pure %>% filter(lineage == "M"),
+                   reffam.pure %>% filter(lineage == "C"),
+                   reffam.pure %>% filter(lineage == "O"),
+                   (reffam.pure %>% filter(lineage == "A"))[rand1,])
   
-  refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
-                                                  measure.vars = c("V1", "V2", "V3", "V4", "V5", "V6", "V7"),
-                                                  variable.name = "fam")
-  #bar chart:all
-  ggplot(data = refadmix.unimpt.melt) +
-    geom_bar(aes(x = oldid, y = value, fill = fam), 
-             stat='identity', width = 1) +
-    facet_grid(cols = vars(lineage), scales = "free_x") +
-    scale_fill_brewer(palette = "PRGn") +
-    labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
-         title = "Unimputed Sites") + 
-    theme_bw() + 
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          panel.grid.major = element_blank(),
-          legend.position = "none")
   #bar chart:pure
-  ggplot(data = refadmix.unimpt.melt %>% 
-           filter(oldid %in% pure)) +
+  p.pureref = refadmix.unimpt.melt %>% 
+    filter(oldid %in% balanced$SRR) %>% 
+    ggplot() +
     geom_bar(aes(x = oldid, y = value, fill = fam), 
              stat='identity', width = 1) +
     facet_grid(cols = vars(lineage), scales = "free_x") +
     scale_fill_brewer(palette = "PRGn") +
-    labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
-         title = "Unimputed Sites") + 
-    theme_bw() + 
+    labs(x = "reference genomes", y = "", fill = "Lineage",
+         title = "Selected References") + 
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           panel.grid.major = element_blank(),
           legend.position = "none")
   
-#select ~20 references of each lineage
-set.seed(2025)
-balanced = reffam.pure %>% filter(F)
-rand1 = sample(c(1:sum(reffam.pure$lineage == "A")), 20, replace = F)
-
-balanced = rbind(reffam.pure %>% filter(lineage == "M"),
-                 reffam.pure %>% filter(lineage == "C"),
-                 reffam.pure %>% filter(lineage == "O"),
-                 (reffam.pure %>% filter(lineage == "A"))[rand1,])
-
-# #write out
-#   write.table(balanced$SRR, file = "references/pureRefs.txt",
-#               quote = F, row.names = F, col.names = F)
-#   
-#   
-# #write lists
-# linu = unique(balanced$lineage)
-# for(i in 1:length(linu)){
-# 
-#   p = balanced$SRR[which(balanced$lineage == linu[i])]
-#   write.table(p, file = paste0("references/", linu[i], ".txt"),
-#               quote = F, col.names = F, row.names = F)
-#   # notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
-#   # write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
-#   #             quote = F, col.names = F, row.names = F)
-#   }
+  #export compound figure
+    supp1 = plot_grid(p.allref, p.pureref, labels = "AUTO")
+    supp1
+    ggsave("manuscript/figs/supp1.pdf", plot = supp1, height = 5, width = 10.5,
+           units = "in")
+  
+  
+  # #write out
+  #   write.table(balanced$SRR, file = "references/pureRefs.txt",
+  #               quote = F, row.names = F, col.names = F)
+  #   
+  #   
+  # #write lists
+  # linu = unique(balanced$lineage)
+  # for(i in 1:length(linu)){
+  # 
+  #   p = balanced$SRR[which(balanced$lineage == linu[i])]
+  #   write.table(p, file = paste0("references/", linu[i], ".txt"),
+  #               quote = F, col.names = F, row.names = F)
+  #   # notp = balanced %>% filter(!(SRR %in% p)) %>% select(SRR)
+  #   # write.table(notp$SRR, file = paste0("references/not", linu[i], ".txt"),
+  #   #             quote = F, col.names = F, row.names = F)
+  #   }
 
 #####
-
-#read mitotypes from first run, make calls
+# read mitotypes, make calls
 #####
+  
   mito.raw = read.delim("data/mitotype3.out", header = F, sep = "")
   mito = mito.raw[1,]
   mito[1,] = NA
@@ -156,12 +192,8 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
   }
 
   mito.calls = map_dfr(usamples, callmito)
-#####
-
   
-  
-#test against 3rd party mitotyping 
-
+  #test against 3rd party mitotyping 
   ahb = read.csv("ahb_metadata.csv")
   
   ahb = ahb %>% left_join(mito.calls %>% rename(vcfid = s))
@@ -169,151 +201,148 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
   ahb %>% filter(state == "FL", Amito_PCR == 1, call != "A1e")
   ahb %>% filter(state == "FL", Amito_PCR == 0, call == "A1e")
   
-
-#test admixture panel on references
-#####
-  
-  #real observations: without imputation
-  refadmix.unimpt = cbind( read.delim("data/reference.unimpt.4.Q", header = F, sep =""),
-                    read.delim("data/reference.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
-    left_join(reffam %>% select(lineage, oldid = SRR))
-  
-    refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
-                                    measure.vars = c("V1", "V2", "V3", "V4"),
-                                    variable.name = "fam")
-  #bar chart
-  plot.unimpt = ggplot(data = refadmix.unimpt.melt) +
-                      geom_bar(aes(x = oldid, y = value, fill = fam), 
-                               stat='identity', width = 1) +
-                      facet_grid(cols = vars(lineage), scales = "free_x") +
-                      scale_fill_brewer(palette = "PRGn") +
-                      labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
-                           title = "Unimputed Sites n=95") + 
-                      theme_bw() + 
-                      theme(axis.text.x = element_blank(),
-                            axis.ticks.x = element_blank(),
-                            panel.grid.major = element_blank(),
-                            legend.position = "none")
-
-    
-  #with imputation
-  refadmix = cbind( read.delim("data/reference.oct25.4.Q", header = F, sep =""),
-    read.delim("data/reference.oct25.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
-    left_join(reffam %>% select(lineage, oldid = SRR))
-  
-  refadmix.melt = refadmix %>% melt(id.vars = c("oldid", "lineage"),
-                                    measure.vars = c("V1", "V2", "V3", "V4"),
-                                    variable.name = "fam")
-  
-  plot.impt = ggplot(data = refadmix.melt) +
-                    geom_bar(aes(x = oldid, y = value, fill = fam), 
-                             stat='identity', width = 1) +
-                    facet_grid(cols = vars(lineage), scales = "free_x") +
-                    scale_fill_brewer(palette = "PRGn") +
-                    labs(x = "reference genomes", y = NULL, fill = "Ancestry\nComponents",
-                         title = "Imputed Sites n=30199") + 
-                    theme_bw() + 
-                    theme(axis.text.x = element_blank(),
-                          axis.ticks.x = element_blank(),
-                          axis.text.y = element_blank(),
-                          axis.ticks.y = element_blank(),
-                          panel.grid.major = element_blank())
-
-  #supplementary
-  supp.admixcomp = plot_grid(plot.unimpt, plot.impt)
-  supp.admixcomp
-  
-  
-#####
-  
- 
-#analysis
-#####
-  
-#set up model 
+  #set up model 
   ahb$AmitoBin = ifelse(ahb$call == "A1e", 1, 0)
   
+#####
+# Load genotype, PCA, and phenotypic data
+#####
+  
+  #oct25
+  #unimpt
+  
+  loadDat = function(VERSION){
+  
+    #connect to most-recent admix run
+    fam = read.delim(paste0("data/admix.",VERSION,".fam"), sep = "", header = F) %>% 
+      select(oldid = V1)
+    sum(!grepl("SRR", fam$oldid))
+    admix = read.delim(paste0("data/admix.",VERSION,".4.Q"), header = F, sep ="")
+    admix = cbind(admix, fam) 
+    #local pca
+    pca = read.delim(paste0("data/samps.",VERSION, ".eigenvec"), header = F, sep = " ") %>%
+      select(1:6)
+    colnames(pca) = c("fam", "oldid", "PC1", "PC2", "PC3", "PC4")
+    #% explained
+    eig = read.delim(paste0("data/samps.",VERSION, ".eigenval"), header = F) %>% filter(V1 > 0)
+    eig$x = 1:nrow(eig)
+    #ggplot(eig, aes(y = V1, x = x)) + geom_point()
+    PCev = round(eig$V1 / sum(eig$V1) * 100, 1)
+    #global pca
+    allpca = read.delim(paste0("data/all.", VERSION,".eigenvec"), header = F, sep = " ") %>%
+      select(1:6)
+    colnames(allpca) = c("fam", "oldid", "PC1", "PC2", "PC3", "PC4")
+    #% explained
+    alleig = read.delim(paste0("data/all.", VERSION,".eigenval"), header = F) %>% filter(V1 > 0)
+    allPCev = round(alleig$V1 / sum(alleig$V1) * 100, 1)
+    
+    #verify lineage identity
+    lins = admix %>% left_join(reffam %>% select(oldid = SRR, lineage)) %>% 
+      filter(grepl ("SRR", oldid)) %>%
+      pivot_longer(starts_with("V")) %>%
+      group_by(name, lineage) %>%
+      mutate(m = mean(value)) %>% ungroup %>% 
+      group_by(name) %>% arrange(desc(m)) %>% slice(1) %>% select(lineage, name)
+    
+    #rename
+    admix = admix %>% rename(A = V4, M = V1, C = V2, O = V3)
+    
+    ahb.plot =  ahb %>% select(-A) %>%
+                left_join(admix %>% select(A, oldid))
+  
+    #establish populations
+    ahb.plot$pop = ahb.plot$state
+    ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "CAR"
+    ahb.plot$pop = factor(ahb.plot$pop,
+                          levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
+    
+    #admixture bar chart
+    ahb.bar = admix %>% left_join(ahb.plot %>% select(oldid, pop))
+    
+      #add bar id
+      ahb.bar = ahb.bar %>% arrange(pop, A)
+      ahb.bar$barid = (1:nrow(ahb.bar))
+      #melt --- long format
+      admix.melt = ahb.bar %>% melt(id.vars = c("oldid", "barid", "pop"), 
+                                    measure.vars = c("A", "M", "C", "O"),
+                                    variable.name = "fam")
+    
+  #create logistic model for mitotypes
+    ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
+    
+    ahbmod = glm(AmitoBin ~ pop * A, family = binomial, data = ahb.moddat)
+    
+      #fit values to plot regression line
+          newdat = map_dfr(unique(ahb.plot$pop), function(x){
+                    fakeA = seq(min(ahb.plot$A[ahb.plot$pop == x]), 
+                          max(ahb.plot$A[ahb.plot$pop == x]), len = 100)
+            return(data.frame(pop = x, A = fakeA))
+          })
+          newdat$AmitoBin = predict(ahbmod, newdat, type = 'response')
+          
+    #load phenotypic data
+    pheno = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
+                       skip = 1) %>% 
+      select(id = 2, def = Aggression) %>% 
+      mutate(id = toupper(id))
+    
+    #fix pheno IDs to match genetic IDs
+    pheno$id[pheno$id == "E4 OG"] = "E4OG"
+    pheno$id[pheno$id == "D6"] = "D6-OG"
+    pheno$id[pheno$id == "G10"] = "z-G10"
+    pheno$id[pheno$id == "A21B"] = "A21b"
+    
+    pheno = pheno %>% 
+      left_join(ahb.plot %>% select(id, A, AmitoBin)) %>% 
+      mutate(AmitoShape = as.character(AmitoBin))
+    
+    pca = pca %>% 
+      left_join(ahb.plot %>% select(oldid, id, id2, state, call, pop)) %>%
+      left_join(admix %>% select(oldid, A, M, C, O), by = 'oldid')
+    
+    pca$pop = factor(pca$pop,
+                     levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
+    
+    #attache lineage names to PCA
+    reflins = read.delim("/home/dylan/Documents/bees/harpurlab/project/popgen/admixResults/fullref/refData.txt")
+    allpca = allpca %>% left_join(reflins %>% select(oldid = SRR, lineage, country))
+    allpca$lineage[is.na(allpca$lineage)] = "admixed"
+    allpca = allpca %>% left_join(ahb.plot %>% select(oldid, pop))
+    
+    allpca$lineage2 = allpca$lineage
+    allpca$lineage2[allpca$lineage == "C" & allpca$country == "Italy"] = "Ci"
+    allpca$lineage2[allpca$lineage == "C" & allpca$country != "Italy"] = "Cc"
+    
+    
+    #relevel PCA
+    allpca$lineage = as.factor(allpca$lineage)
+    allpca$lineage = relevel(allpca$lineage, "admixed")
+    
 
-#connect to most-recent admix run
-  fam = read.delim("data/admix.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)
-  sum(!grepl("SRR", fam$oldid))
-  admix = read.delim("data/admix.unimpt.4.Q", header = F, sep ="")
-  admix = cbind(admix, fam) 
-  
-  #verify lineage identity
-  lins = admix %>% left_join(reffam %>% select(oldid = SRR, lineage)) %>% 
-    filter(grepl ("SRR", oldid)) %>%
-    pivot_longer(starts_with("V")) %>%
-    group_by(name, lineage) %>%
-    mutate(m = mean(value)) %>% ungroup %>% 
-    group_by(name) %>% arrange(desc(m)) %>% slice(1) %>% select(lineage, name)
-  
-  lins
-  
-  #rename
-  admix = admix %>% rename(A = V4, M = V1, C = V2, O = V3)
-  
-  ahb.plot =  ahb %>% select(-A) %>%
-              left_join(admix %>% select(A, oldid))
+    out = dplyr::lst(admix, pca, PCev, allpca, allPCev, ahb.plot, ahb.bar,
+                     newdat, pheno, ahbmod, admix.melt, ahb.moddat)
+  }
   
   
-  #mean admixture statistics
-    meanse = function(x){
+  AHBDAT = loadDat("oct25")
+  list2env(AHBDAT, .GlobalEnv)
+          
+#####
+# Analysis
+#####
+          
+    #mean admixture statistics
+      meanse = function(x){
         m = mean(x, na.rm = T) %>% round(4)
         se = sd(x, na.rm = T) /  sqrt(sum(!is.na(x)))
         se = round(se, 4)
         return(paste0(m,", ",se))
       }
-    
     admix %>% filter(!grepl("SRR", oldid)) %>%
       select(-oldid) %>%
       summarise_all(meanse)
-
-  
-  #establish populations
-  ahb.plot$pop = ahb.plot$state
-  ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "CAR"
-  ahb.plot$pop = factor(ahb.plot$pop,
-                        levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
-  
-  
-#write out
-  # sharedat = ahb %>% select(-A) %>%
-  #   left_join(admix %>% select(A, M, C, O, oldid)) %>% 
-  #   select(sample_name = id, colony_id = id2, state, 
-  #          mitotype_ATRAM = call, Amito_ATRAM = AmitoBin,
-  #          Amito_PCR, A, M, C, O)
-  # 
-  # meta = read.delim("../old_ahb/sra/sra_meta.tsv", sep = "\t") 
-  # 
-  # sharedat = sharedat %>% 
-  #   left_join(meta %>% select(sample_name, R1 = filename, R2 = filename2)) %>% 
-  #   filter(state != "Jamaica")
-  # 
-  # write.csv(sharedat, "data/share_metadata.csv",
-  #           quote = F, row.names = F)
-  
-  
-  
-#create model
-  ahb.moddat = ahb.plot %>% filter(!is.na(AmitoBin))
-  
-  ahbmod = glm(AmitoBin ~ pop * A, family = binomial, data = ahb.moddat)
-  summary(ahbmod)$aic
-  
-    #fit some values
-        newdat = map_dfr(unique(ahb.plot$pop), function(x){
-                  fakeA = seq(min(ahb.plot$A[ahb.plot$pop == x]), 
-                        max(ahb.plot$A[ahb.plot$pop == x]), len = 100)
-          return(data.frame(pop = x, A = fakeA))
-        })
-        newdat$AmitoBin = predict(ahbmod, newdat, type = 'response')
-      
-  #model fit
-  with(ahbmod, pchisq(null.deviance - deviance, 
-                      df.null - df.residual, lower.tail = FALSE))
-  
-  #anova N vs S.
+    
+    #admixture anova N vs S.
     ahb.ano = ahb.plot
     ahb.ano$globe = ifelse(grepl("IN|PA", ahb.ano$pop), "N", "S")
     globelm = lm(A ~ globe, data = ahb.ano)
@@ -321,204 +350,480 @@ balanced = rbind(reffam.pure %>% filter(lineage == "M"),
     #distributions
     # ggplot(ahb.ano, aes(x = globe, y = A)) + geom_boxplot()
     # ggplot(ahb.ano, aes(x = A)) + geom_histogram() + facet_wrap(facets = vars(globe))
+         
+    #logistic mitotype model fit
+    with(ahbmod, pchisq(null.deviance - deviance, 
+                        df.null - df.residual, lower.tail = FALSE))
+    
+  #summaries
+    #n by state
+    ahb.plot %>% group_by(pop) %>% summarise(n=n())
+    #n by pop (filtered)
+    ahb.plot %>% group_by(pop) %>% summarise(n=n())
+    #n each mitotype
+    ahb.plot %>% group_by(call) %>% summarise(n=n())
+    #range of A values
+    ahb.m = ahb.plot %>% group_by(pop) %>% 
+      summarise(r1 = range(A)[1], r2 = range(A)[2], m = mean(A))
+    ahb.m
+    
+    #modeled threshold values of A
+    thresh = newdat %>% group_by(pop) %>% mutate(t = abs(0.5 - AmitoBin)) %>%
+      arrange(t) %>% slice(1) %>% filter(AmitoBin > 0.4 & AmitoBin < 0.6)
+    thresh
+    
+    #correct calls
+    sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 1) |
+           (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 0)) / nrow(ahb.moddat)
+    #false positives
+    sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 0)  )
+    #false negatives
+    sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
+    
+    
+  #color pallette 
+    plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
+    
   
-#summaries
-  #n by state
-  ahb.plot %>% group_by(pop) %>% summarise(n=n())
-  #n by pop (filtered)
-  ahb.plot %>% group_by(pop) %>% summarise(n=n())
-  #n each mitotype
-  ahb.plot %>% group_by(call) %>% summarise(n=n())
-  #range of A values
-  ahb.m = ahb.plot %>% group_by(pop) %>% 
-    summarise(r1 = range(A)[1], r2 = range(A)[2], m = mean(A))
-  ahb.m
-  
-  #modeled threshold values of A
-  thresh = newdat %>% group_by(pop) %>% mutate(t = abs(0.5 - AmitoBin)) %>%
-    arrange(t) %>% slice(1) %>% filter(AmitoBin > 0.4 & AmitoBin < 0.6)
-  thresh
-  
-  #correct calls
-  sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 1) |
-         (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 0)) / nrow(ahb.moddat)
-  #false positives
-  sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 0)  )
-  #false negatives
-  sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
-  
-  
-#color pallette 
-  plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
-  
+  #logistic regression of mitotypes
+    p.logimito = ggplot(ahb.plot, aes(x = A, y = AmitoBin, color = pop)) + 
+      geom_point(size = 2, alpha = 0.5) +
+      geom_line(data = newdat, color = 'black', linetype = 2) +
+      facet_grid(rows = vars(pop)) + theme_bw() + 
+      #plot thresholds
+      #geom_vline(data = thresh, aes(xintercept = A), linetype = 2) +
+      #plot means
+      #geom_vline(data = ahb.m, aes(xintercept = m), linetype = 3)+
+      #colors
+      scale_color_manual(values = plot.colors)+
+      #labels etc
+      labs(x = "A-lineage Admixture", y = "A-lineage Mitotype", 
+           color = "State") +
+      scale_y_continuous(breaks = c(0,1), 
+                         labels = c("False", "True"), limits = c(-.2, 1.2))+
+      theme(legend.position = "none",
+            axis.title = element_text(size = 9),
+            strip.text.y = element_text(size = 7),
+            axis.text = element_text(size = 7))
+    
+    p.logimito
+    
+    #admixture bar chart
+    p.sampleadmix = ggplot(data = admix.melt %>% filter(!is.na(pop))) +
+      geom_bar(aes(x = as.factor(barid), y = value, fill = fam), 
+               stat='identity', width = 1) +
+      facet_grid(cols = vars(pop), scales = "free_x") +
+      scale_fill_brewer(palette = "PRGn") +
+      labs(x = "sample", y = "Proportion of Genome", fill = "Lineage") + 
+      theme_bw() + 
+      theme(axis.text.y = element_text(size = 7),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            panel.grid.major = element_blank(),
+            legend.title=element_text(size=7),
+            legend.text=element_text(size = 6),
+            axis.title = element_text(size = 9),
+            legend.key.size = unit(0.8,"line"),
+            strip.text.x = element_text(size = 7),
+            legend.margin = margin(l = -8)) + 
+      guides(fill = guide_legend(override.aes = list(linewidth = 0.8)))
+      
+    p.sampleadmix
+    
+    #phenotypic data
+    
+    range(pheno$def)
 
-#plot all pops
-  ggplot(ahb.plot, aes(x = A, y = AmitoBin, color = pop)) + 
-    geom_point(size = 2.5, alpha = 0.5) +
-    geom_line(data = newdat, color = 'black', linetype = 2) +
-    facet_grid(rows = vars(pop)) + theme_bw() + 
-    #plot thresholds
-    #geom_vline(data = thresh, aes(xintercept = A), linetype = 2) +
-    #plot means
-    #geom_vline(data = ahb.m, aes(xintercept = m), linetype = 3)+
-    #colors
-    scale_color_manual(values = plot.colors)+
-    #labels etc
-    labs(x = "Estimated A-lineage Ancestry", y = "A-lineage Mitochondrion", 
-         color = "State") +
-    scale_y_continuous(breaks = c(0,1), 
-                       labels = c("False", "True"), limits = c(-.2, 1.2))+
-    theme(legend.position = "none")
+    #plot
+    qdmse = summary(lm(def ~ A, data = pheno))$residuals **2 %>%
+      mean() %>% 
+      round(.,3)
+    qdmse = paste0("MSE = ", qdmse)
+    
+    p.quantdef = ggplot(pheno, aes(x = A, y = def)) + 
+      geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+                  height = 0.05, width = 0) + 
+      geom_smooth(method = 'lm', linetype = 2, color = 'black',
+                  linewidth = 0.5) + 
+      annotate(geom = "text", x = 0.2, y = 2, label = qdmse, size = 6) +
+      labs(x = "A-lineage Admixture",
+           y = "Defensive Score") +
+      theme(axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7)) 
+    p.quantdef
+    
+    
+    bdmse = summary(lm(def ~ AmitoBin, data = pheno))$residuals **2 %>%
+      mean() %>% 
+      round(.,3)
+    bdmse = paste0("MSE = ", bdmse)
+    
+    p.bindef = pheno %>% 
+      filter(!is.na(AmitoBin)) %>% 
+      #mutate(AmitoBin = as.factor(AmitoBin)) %>% 
+      ggplot(aes(x = AmitoBin, y = def)) + 
+      geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+                  height = 0.05, width = 0.05) + 
+      geom_smooth(method = 'lm', linetype = 2, color = 'black',
+                  linewidth = 0.5) +
+     # geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
+      annotate(geom = "text", x = 0.4, y = 2, label = bdmse, size = 6) +
+      scale_x_continuous(breaks = c(0,1), labels = c("False","True"),
+                         limits = c(-0.2, 1.2)) +
+      labs(x = "A-lineage Mitotype",
+           y = "") +
+      theme(axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7))
+    p.bindef
+  #   
+  # #leave-one-out
+  #   #quant
+  #   pheno.quant = pheno %>% filter(!is.na(A))
+  #   LOO = 
+  #   errs = rep(NA, nrow(pheno.quant))
+  #   for(i in 1:nrow(pheno.quant)){
+  #     xi = pheno.quant[i,]
+  #     xm1 = pheno.quant[-i,]
+  # 
+  #     mod = lm(def ~ A, data = xm1)
+  # 
+  #     errs[i] = (xi$def - predict(mod, xi))**2
+  #   }
+  #   mean(errs)
+
+ # #plot false and correct assignments
+ #      
+ #      pheno.gtest = pheno
+ #      pheno.gtest$assign = "correct"
+ #      pheno.gtest$assign[pheno.gtest$def < 2 & pheno.gtest$A > 0.5] = 'FalsePositive'
+ #      pheno.gtest$assign[pheno.gtest$def >= 2 & pheno.gtest$A < 0.5] = 'FalseNegative'
+ #      
+ #        
+ #      ggplot(pheno.gtest, aes(x = A, y = def, color = assign)) + 
+ #        geom_jitter(size = 2, alpha = 0.5,
+ #                    height = 0, width = 0) + 
+ #        geom_smooth(method = 'lm', linetype = 2, color = 'black',
+ #                    linewidth = 0.5) +
+ #        geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
+ #        geom_vline(aes(xintercept = 0.5), linetype = 2, color = 'red') +
+ #        labs(x = "A-lineage Admixture",
+ #             y = "Defensive Score") +
+ #        theme(axis.title = element_text(size = 9),
+ #              axis.text = element_text(size = 7))
+ #      
+ #      table(pheno.gtest$assign)
+ #      (17+2)/48
+ #      
+ #      
+ #      pheno.mtest = pheno %>% 
+ #        filter(!is.na(AmitoBin))
+ #      pheno.mtest$assign = "Correct"
+ #      pheno.mtest$assign[pheno.mtest$def < 2 & pheno.mtest$AmitoBin == TRUE] = 'FalsePositive'
+ #      pheno.mtest$assign[pheno.mtest$def >= 2 & pheno.mtest$AmitoBin == FALSE] = 'FalseNegative'
+ #      
+ #      ggplot(pheno.mtest,aes( x = AmitoBin, y = def, color = assign)) + 
+ #      geom_jitter(size = 2, alpha = 0.5,
+ #                  height = 0, width = 0.05) + 
+ #      geom_smooth(method = 'lm', linetype = 2, color = 'black',
+ #                  linewidth = 0.5) +
+ #      geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
+ #      scale_x_continuous(breaks = c(0,1), labels = c("False","True"),
+ #                         limits = c(-0.2, 1.2)) +
+ #      labs(x = "A-lineage Mitotype",
+ #           y = "") +
+ #      theme(axis.title = element_text(size = 9),
+ #            axis.text = element_text(size = 7))
+ #      
+ #      table(pheno.mtest$assign)
+ #    
+ #    #TODO: add sig to fig
+ #    
+ #    summary(lm(def ~ A, data = pheno))
+ #    summary(lm(def ~ AmitoBin, data = pheno))
+    
+    #PCA
+
+
+  #PCA by population
+    ggplot(pca, aes(x = PC1, y = PC2, color = pop)) + geom_point(alpha = 0.5, size = 3) +
+      theme_bw() +
+      scale_color_manual(values = plot.colors) +
+      labs(color = "Population",
+           x = paste0("PC1 (", PCev[1], "%)"),
+           y = paste0("PC2 (", PCev[2], "%)"))
+    
+  #PCA by lineage
+    pcapair = pca %>% select(PC1, PC2, PC3, PC4, A, M, C, O)
+    pairs(pcapair, upper.panel = NULL)
+    
+    
+  #all pca
+    #load data
+    #ahb4 = read.csv("AHBmeta4.csv") %>% rename(oldid = gencove_id)
+    
+    
+
+    # #explicit names
+    # allpca$expl = as.character(allpca$lineage)
+    #   allpca$expl[allpca$expl == "A"] = "Africa"
+    #   allpca$expl[allpca$expl == "M"] = "N. Europe"
+    #   allpca$expl[allpca$expl == "C"] = "S. Europe"
+    #   allpca$expl[allpca$expl == "O"] = "Mid. East"
+    #   #relevel
+    #   allpca$expl= as.factor(allpca$expl)
+    #   allpca$expl = relevel(allpca$expl, "USA")
+    
+    #allpca2 = allpca %>% filter(! state %in% c("Jamaica", "NM"))
+    
+    
+    p.globpca = ggplot(allpca, 
+           aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
+      geom_point(size = 2, alpha = 0.5) + 
+      labs(shape = "Lineage", color = "Population",
+           x = paste0("PC1 (", PCev[1], "%)"),
+           y = paste0("PC2 (", PCev[2], "%)"))+
+      scale_color_manual(values = plot.colors)+
+      theme_bw() +
+      theme(legend.title=element_text(size=7),
+            legend.text=element_text(size = 6),
+            legend.spacing.y = unit(1, 'line'),
+            axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7),
+            legend.key.size = unit(0.6,"line"),
+            legend.margin = margin(l = -8)) +
+      guides(color = guide_legend(byrow = TRUE),
+             shape = guide_legend(byrow = TRUE))
+    p.globpca
+    
+    # ggplot(allpca, 
+    #        aes(x = PC3, y = PC4, color = pop, shape = lineage)) + 
+    #   geom_point(size = 3, alpha = 0.5) + 
+    #   labs(shape = "Lineage", color = "Population",
+    #        x = paste0("PC3 (", PCev[3], "%)"),
+    #        y = paste0("PC4 (", PCev[4], "%)"))+
+    #   scale_color_manual(values = plot.colors)+
+    #   theme_bw()
   
-#admixture bar chart
+    
+  ### PC's vs Admixture 
+    pca.admix = allpca %>% left_join(admix, by = 'oldid') %>%
+      filter(!grepl("SRR", oldid))
+    
+    summary(lm(A~PC2, data = pca.admix))
+    summary(lm(C~PC2, data = pca.admix))
+    summary(lm(M~PC1, data = pca.admix))
+    summary(lm(O~PC1, data = pca.admix))
+    
   
-  ahb.bar = admix %>% left_join(ahb.plot %>% select(oldid, pop))
+#####
+# Compound Figures
+#####
+    #main: ancestry results
+    sub.a = plot_grid(p.sampleadmix, p.globpca, labels = c("A", "B"), nrow = 1,
+                      rel_widths = c(0.9,1))
+    sub.b = plot_grid(p.logimito, NULL, labels = c("C", ""), nrow = 1, 
+                      rel_widths = c(1, 0.2))
+    sub.c = plot_grid(p.quantdef, p.bindef, labels = c("D", "E"), nrow = 1)
+    
+    p.ancfig = plot_grid(sub.a, sub.b, sub.c, nrow = 3, 
+                         rel_heights = c(0.9,1,0.7))
+    
+    ggsave("manuscript/figs/fig3.pdf", plot = p.ancfig, height = 9, width = 7,
+           units = "in")
+    
+    #extended PCA
+    
+    
+  # ### Compound figure: two smaller figs
+  #   ggsave("manuscript/figs/fig3a.pdf", plot = sub.a, height = 3, width = 7,
+  #          units = "in")
+  #   
+  #   sub.c2 = plot_grid(p.quantdef, p.bindef, labels = c("B", "C"), nrow = 1)
+  #   
+  #   p.ancfig.b = plot_grid(p.logimito, sub.c2, nrow = 2, 
+  #                        rel_heights = c(1,0.6), labels = c("A",NULL))
+  #   
+  #   ggsave("manuscript/figs/fig3b.pdf", plot = p.ancfig.b, height = 8, width = 7,
+  #          units = "in")
+  #  
+  # 
+##### 
+#compare imputed and unimptued data
+##### 
+    
+    #load unimputed data
+    AHBDAT.unimpt = loadDat("unimpt")
+    list2env(AHBDAT.unimpt, .GlobalEnv)
+    
   
-  #add bar id
-  ahb.bar = ahb.bar %>% arrange(pop, A)
-  ahb.bar$barid = (1:nrow(ahb.bar))
+  #PCA
+    p.u.globpca = ggplot(allpca, 
+                       aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
+      geom_point(size = 2, alpha = 0.5) + 
+      labs(shape = "Lineage", color = "Population",
+           x = paste0("PC1 (", PCev[1], "%)"),
+           y = paste0("PC2 (", PCev[2], "%)"))+
+      scale_color_manual(values = plot.colors)+
+      theme_bw() +
+      theme(legend.title=element_text(size=7),
+            legend.text=element_text(size = 6),
+            legend.spacing.y = unit(1, 'line'),
+            axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7),
+            legend.key.size = unit(0.6,"line"),
+            legend.margin = margin(l = -8),
+            legend.position = "none") +
+      guides(color = guide_legend(byrow = TRUE),
+             shape = guide_legend(byrow = TRUE))
+    p.u.globpca
+    
+  #admixture
+    p.u.sampleadmix = ggplot(data = admix.melt %>% filter(!is.na(pop))) +
+      geom_bar(aes(x = as.factor(barid), y = value, fill = fam), 
+               stat='identity', width = 1) +
+      facet_grid(cols = vars(pop), scales = "free_x") +
+      scale_fill_brewer(palette = "PRGn") +
+      labs(x = "sample", y = NULL, fill = "Lineage") + 
+      theme_bw() + 
+      theme(axis.text.y = element_text(size = 7),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            panel.grid.major = element_blank(),
+            legend.title=element_text(size=7),
+            legend.text=element_text(size = 6),
+            axis.title = element_text(size = 9),
+            legend.key.size = unit(0.8,"line"),
+            strip.text.x = element_text(size = 7),
+            legend.margin = margin(l = -8),
+            legend.position = "none") + 
+      guides(fill = guide_legend(override.aes = list(linewidth = 0.8)))
+    
+    p.u.sampleadmix
+  #mitotypes
+    #logistic regression of mitotypes
+    p.u.logimito = ggplot(ahb.plot, aes(x = A, y = AmitoBin, color = pop)) + 
+      geom_point(size = 2, alpha = 0.5) +
+      geom_line(data = newdat, color = 'black', linetype = 2) +
+      facet_grid(rows = vars(pop)) + theme_bw() + 
+      scale_color_manual(values = plot.colors)+
+      #labels etc
+      labs(x = "A-lineage Admixture", y = NULL, 
+           color = "State") +
+      scale_y_continuous(breaks = c(0,1), 
+                         labels = c("False", "True"), limits = c(-.2, 1.2))+
+      theme(legend.position = "none",
+            axis.title = element_text(size = 9),
+            strip.text.y = element_text(size = 7),
+            axis.text = element_text(size = 7),
+            axis.text.y = element_blank()) 
+      
+    p.u.logimito
+    
+      #correct calls
+      sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 1) |
+             (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 0)) / nrow(ahb.moddat)
+      #false positives
+      sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 0)  )
+      #false negatives
+      sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
+    
+  #phenotypes
+      qdmse = summary(lm(def ~ A, data = pheno))$residuals **2 %>%
+        mean() %>% 
+        round(.,3)
+      qdmse = paste0("MSE = ", qdmse)
+      
+      p.u.quantdef = ggplot(pheno, aes(x = A, y = def)) + 
+        geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+                    height = 0.05, width = 0) + 
+        geom_smooth(method = 'lm', linetype = 2, color = 'black',
+                    linewidth = 0.5) + 
+        annotate(geom = "text", x = 0.4, y = 2, label = qdmse, size = 6) +
+        #ylim(0.5, 3) +
+        labs(x = "A-lineage Admixture",
+             y = "Defensive Score") +
+        theme(axis.title = element_text(size = 9),
+              axis.text = element_text(size = 7)) 
+      p.u.quantdef
+      
+
+#####
+# Compound Figure
+#####   
+      
+  impt.comp = plot_grid(NULL, NULL, p.sampleadmix, p.u.sampleadmix,
+            p.globpca, p.u.globpca,
+            p.logimito, p.u.logimito,
+            p.quantdef, p.u.quantdef,
+            nrow = 5,
+            rel_heights = c(0.15, 01,1,1.5,1),
+            rel_widths = c(1.1, 1),
+            labels = c("Imputed data", "Unimputed data", 
+                       NA, NA, NA, NA, NA, NA, NA, NA))
+      
+  ggsave("manuscript/figs/fig4.pdf", plot = impt.comp, height = 11, width = 7,
+         units = "in")
   
-  admix.melt = ahb.bar %>% melt(id.vars = c("oldid", "barid", "pop"), 
-                         measure.vars = c("A", "M", "C", "O"),
-                         variable.name = "fam")
   
+#####
+# test admixture panel on references
+#####
+
+  #real observations: without imputation
+  refadmix.unimpt = cbind( read.delim("data/reference.unimpt.4.Q", header = F, sep =""),
+                           read.delim("data/reference.unimpt.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+    left_join(reffam %>% select(lineage, oldid = SRR))
+  
+  refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
+                                                  measure.vars = c("V1", "V2", "V3", "V4"),
+                                                  variable.name = "fam")
   #bar chart
-  ggplot(data = admix.melt %>% filter(!is.na(pop))) +
-    geom_bar(aes(x = as.factor(barid), y = value, fill = fam), 
+  plot.unimpt = ggplot(data = refadmix.unimpt.melt) +
+    geom_bar(aes(x = oldid, y = value, fill = fam), 
              stat='identity', width = 1) +
-    facet_grid(cols = vars(pop), scales = "free_x") +
+    facet_grid(cols = vars(lineage), scales = "free_x") +
     scale_fill_brewer(palette = "PRGn") +
-    labs(x = "sample", y = "Proportion of Genome", fill = "Lineage") + 
-    theme_bw() + 
+    labs(x = "reference genomes", y = "Proportion of Genome", fill = "Lineage",
+         title = "Unimputed Sites n=95") + 
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
+          panel.grid.major = element_blank(),
+          legend.position = "none")
+  
+  
+  #with imputation
+  refadmix = cbind( read.delim("data/reference.oct25.4.Q", header = F, sep =""),
+                    read.delim("data/reference.oct25.fam", sep = "", header = F) %>% select(oldid = V1)) %>%
+    left_join(reffam %>% select(lineage, oldid = SRR))
+  
+  refadmix.melt = refadmix %>% melt(id.vars = c("oldid", "lineage"),
+                                    measure.vars = c("V1", "V2", "V3", "V4"),
+                                    variable.name = "fam")
+  
+  plot.impt = ggplot(data = refadmix.melt) +
+    geom_bar(aes(x = oldid, y = value, fill = fam), 
+             stat='identity', width = 1) +
+    facet_grid(cols = vars(lineage), scales = "free_x") +
+    scale_fill_brewer(palette = "PRGn") +
+    labs(x = "reference genomes", y = NULL, fill = "Ancestry\nComponents",
+         title = "Imputed Sites n=30199") + 
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
           panel.grid.major = element_blank())
   
-  
-#quick pheno test
-  pheno = read_excel("/home/dylan/Documents/bees/harpurlab/project/popgen/samples/beekData/AZ Colony Sample ID.xlsx",
-                     skip = 1) %>% 
-    select(id = 2, def = Aggression) %>% 
-    mutate(id = toupper(id))
-  
-  pheno$id[pheno$id == "E4 OG"] = "E4OG"
-  pheno$id[pheno$id == "D6"] = "D6-OG"
-  pheno$id[pheno$id == "G10"] = "z-G10"
-  pheno$id[pheno$id == "A21B"] = "A21b"
-  
-  ahb.plot = ahb.plot %>% 
-    left_join(pheno)
-  
-  ggplot(ahb.plot, aes(x = A, y = def)) + 
-    geom_point() + 
-    geom_smooth(method = 'lm')
-  
-  summary(lm(def ~ A, data = ahb.plot))
-    #impt sig: 0.000486
-  #unimpt sig: 0.000184
-  
-  
-  
-#pca
-  pca = read.delim("data/samps.oct25.eigenvec", header = F, sep = " ") %>%
-    select(1:5)
-  colnames(pca) = c("fam", "oldid", "PC1", "PC2", "PC3")
-  pca = pca %>% 
-    left_join(ahb.plot %>% select(oldid, id, id2, state, call, pop)) %>%
-    left_join(admix %>% select(oldid, A, M, C, O), by = 'oldid')
-  
-  pca$pop = factor(pca$pop,
-                        levels = c("IN", "PA", "FL", "Jamaica","TX", "AZ"))
-  
-  #% explained
-  eig = read.delim("data/samps.oct25.eigenval", header = F) %>% filter(V1 > 0)
-  eig$x = 1:nrow(eig)
-    #ggplot(eig, aes(y = V1, x = x)) + geom_point()
-  
-  PC1ev = round(eig$V1[1] / sum(eig$V1) * 100, 1)
-  PC2ev = round(eig$V1[2] / sum(eig$V1) * 100, 1)
-  
-#PCA by population
-  ggplot(pca, aes(x = PC1, y = PC2, color = pop)) + geom_point(alpha = 0.5, size = 3) +
-    theme_bw() +
-    scale_color_manual(values = plot.colors) +
-    labs(color = "Population",
-         x = paste0("PC1 (", PC1ev, "%)"),
-         y = paste0("PC2 (", PC2ev, "%)"))
-  
-#PCA by lineage
-  # pcapair = pca %>% select(PC1, PC2, PC3, A, M, C, O)
-  # pairs(pcapair, upper.panel = NULL)
-  
-  
-#all pca
-  #load data
-  #ahb4 = read.csv("AHBmeta4.csv") %>% rename(oldid = gencove_id)
-  allpca = read.delim("data/all.unimpt.eigenvec", header = F, sep = " ") %>%
-    select(1:5)
-  colnames(allpca) = c("fam", "oldid", "PC1", "PC2", "PC3")
-  
-  #% explained
-  eig = read.delim("data/all.unimpt.eigenval", header = F) %>% filter(V1 > 0)
-  PCev = c(round(eig$V1[1] / sum(eig$V1) * 100, 1),
-           round(eig$V1[2] / sum(eig$V1) * 100, 1))
-  PCev
-  
-  #attache lineage names
-  reflins = read.delim("/home/dylan/Documents/bees/harpurlab/project/popgen/admixResults/fullref/refData.txt")
-  allpca = allpca %>% left_join(reflins %>% select(oldid = SRR, lineage, country))
-  allpca$lineage[is.na(allpca$lineage)] = "admixed"
-  allpca = allpca %>% left_join(ahb.plot %>% select(oldid, pop))
-  
-  allpca$lineage2 = allpca$lineage
-  allpca$lineage2[allpca$lineage == "C" & allpca$country == "Italy"] = "Ci"
-  allpca$lineage2[allpca$lineage == "C" & allpca$country != "Italy"] = "Cc"
-  
-  
-  #relevel
-  allpca$lineage = as.factor(allpca$lineage)
-  allpca$lineage = relevel(allpca$lineage, "admixed")
-  # #explicit names
-  # allpca$expl = as.character(allpca$lineage)
-  #   allpca$expl[allpca$expl == "A"] = "Africa"
-  #   allpca$expl[allpca$expl == "M"] = "N. Europe"
-  #   allpca$expl[allpca$expl == "C"] = "S. Europe"
-  #   allpca$expl[allpca$expl == "O"] = "Mid. East"
-  #   #relevel
-  #   allpca$expl= as.factor(allpca$expl)
-  #   allpca$expl = relevel(allpca$expl, "USA")
-  
-  #allpca2 = allpca %>% filter(! state %in% c("Jamaica", "NM"))
-  
-  
-  ggplot(allpca, 
-         aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
-    geom_point(size = 3, alpha = 0.5) + 
-    labs(shape = "Lineage", color = "Population",
-         x = paste0("PC1 (", PCev[1], "%)"),
-         y = paste0("PC2 (", PCev[2], "%)"))+
-    scale_color_manual(values = plot.colors)+
-    theme_bw()
+  #supplementary
+  supp.admixcomp = plot_grid(plot.unimpt, plot.impt)
+  supp.admixcomp
+
 
   
-### PC's vs Admixture 
-  pca.admix = allpca %>% left_join(admix, by = 'oldid') %>%
-    filter(!grepl("SRR", oldid))
   
-  summary(lm(A~PC2, data = pca.admix))
-  summary(lm(M~PC1, data = pca.admix))
-  
-  
-  
-  
-  
-#mapping sampling locations
-###  
-library(rnaturalearth)
-library(sf)
-library(ggspatial)
-#install.packages('rnaturalearthdata')
-  
+##### 
+# mapping sampling locations
+##### 
+
 #load gps positions of samples
 ahb = read.csv("ahb_metadata.csv")
 samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
@@ -540,12 +845,21 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
   
     samp.gps$state[samp.gps$state == "Jamaica"] = "CAR"
     samp.gps$state = factor(samp.gps$state,
-                     levels = c("IN", "PA", "FL", "CAR","TX", "AZ"))
+                     levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
+    
+  #anonymize CAR sample locations
+    caranonctr = c(-80, 18)
+    caranonpts = cbind(rnorm(5, caranonctr[1], 0.5), rnorm(5, caranonctr[2], 0.5))
+    samp.gps[samp.gps$state == "CAR", c("lon", "lat")] = caranonpts
+    
+    
   
   #build map limits using max and min values from data (plus a bit of padding)
   map.limits = rbind(range(samp.gps$lon), range(samp.gps$lat))
     map.limits[,1] = map.limits[,1] - 1.2
     map.limits[,2] = map.limits[,2] + 1.2
+    #a bit more padding south
+    map.limits[2,1] = map.limits[2,1] - 2
   
   
   #region <- ne_states()
@@ -578,36 +892,44 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
   sampling = ggplot(data = region) +
       geom_sf() +
       geom_sf(data = samp.gps, aes(fill = state, geometry = geometry),
-              size = 4, shape = 23) +
+              size = 2, shape = 23) +
       # annotate(geom = "text", x = -90, y = 26, label = "Gulf of Mexico", 
       #          fontface = "italic", color = "grey22", size = 6) +
       coord_sf(xlim = map.limits[1,], 
                ylim = map.limits[2,], expand = FALSE) +
     scale_fill_manual(values = plot.colors) +
-    labs(fill = "location") +
+    labs(fill = "Population") +
     #scale bars
     annotation_scale(
       location = "tl",
-      bar_cols = c("grey60", "white"),
-      text_family = "ArcherPro Book") +
+      bar_cols = c("grey60", "white")) +
     #north arrow
     annotation_north_arrow(
       location = "tl", which_north = "true",
       pad_x = unit(0.28, "in"), pad_y = unit(0.45, "in"),
       style = ggspatial::north_arrow_nautical(
         fill = c("grey40", "white"),
-        line_col = "grey20",
-        text_family = "ArcherPro Book")) +
+        line_col = "grey20")) +
       theme(axis.title.x = element_blank(), 
             axis.title.y = element_blank(), panel.background = element_rect(fill = "azure"), 
-            panel.border = element_rect(fill = NA))
+            panel.border = element_rect(fill = NA)) +
+    #annotation for CAR samples
+    annotate("point",x = -80 , y = 18, size = 80, alpha = 0.2,
+             color = '#e6ab02')
+  #sampling
   
   #plot both together
-  supp.map = ggdraw(sampling) + 
-    draw_plot(cutout, width = 0.3, height = 0.4, 
-              x = 0.1, y = 0.01)
-  supp.map
+  full.map = ggdraw(sampling) + 
+    draw_plot(cutout, width = 0.28, height = 0.32, 
+              x = 0.1, y = 0.1)
+  full.map
+  #save
   
+  pdf("manuscript/figs/fig2.pdf", width = 7, height = 7)
+
+    full.map
+
+  dev.off()
  
   
   

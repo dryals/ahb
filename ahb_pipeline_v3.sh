@@ -70,17 +70,17 @@ module load biocontainers bcftools plink r
 # echo "creating sample site list..."
 #     bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 # 
-# echo "determining appropriate references..."
-#     echo "    pulling full reference file..."
-#     cd $CLUSTER_SCRATCH/ahb
-#     #no multiallelic sites, only snps, keep subset of references, no contigs
-#     #rename chromosomes to "1,2,3...16"
-#       #quite big, ~17M sites
-#     bcftools view $refs -r $chrsLong -m2 -M2 \
-#         -v snps -Ou | bcftools annotate --rename-chrs $rename \
-#         --threads $SLURM_NTASKS -Ob -o allRef.bcf.gz
-# 
-#     bcftools index -c allRef.bcf.gz
+echo "determining appropriate references..."
+    echo "    pulling full reference file..."
+    cd $CLUSTER_SCRATCH/ahb
+    #no multiallelic sites, only snps, keep subset of references, no contigs
+    #rename chromosomes to "1,2,3...16"
+      #quite big, ~17M sites
+    bcftools view $refs -r $chrsLong -m2 -M2 \
+        -v snps -Ou | bcftools annotate --rename-chrs $rename \
+        --threads $SLURM_NTASKS -Ob -o allRef.bcf.gz
+
+    bcftools index -c allRef.bcf.gz
 #     
 #     echo "    loading into plink..."
 #     plink --bcf allRef.bcf.gz --make-bed \
@@ -96,37 +96,37 @@ module load biocontainers bcftools plink r
 #     
 #      #WARNING: run ahb_analysis.R to output lists of pure samples...
 # 
-# echo "filtering references..."
-# #filter references to informative sites
-#     cd $CLUSTER_SCRATCH/ahb
-#     bcftools view allRef.bcf.gz \
-#         -T plink/samples.${version}.sites -S ~/ryals/ahb/references/pureRefs.txt -M2 -m2 \
-#         --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
-#         
-#     echo "  indexing..."
-#     bcftools index -c reference.filter.${version}.bcf.gz
-#     
-#     #kill script if the above fails
-#     if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
-#         echo "Filters Failed!"
-#         exit 1
-#     fi
+echo "filtering references..."
+#filter references to informative sites
+    cd $CLUSTER_SCRATCH/ahb
+    bcftools view allRef.bcf.gz \
+        -T plink/samples.${version}.sites -S ~/ryals/ahb/references/pureRefs.txt -M2 -m2 \
+        --threads $SLURM_NTASKS -Ob -o reference.filter.${version}.bcf.gz
+        
+    echo "  indexing..."
+    bcftools index -c reference.filter.${version}.bcf.gz
+    
+    #kill script if the above fails
+    if [ ! -f "reference.filter.${version}.bcf.gz.csi" ]; then
+        echo "Filters Failed!"
+        exit 1
+    fi
 #    
 echo "---------------------"
 echo "selecting sites"
 echo "---------------------"
 #    
-# echo "launching Ia script"
-#     #count number of samples in each population
-#     cd /home/dryals/ryals/ahb/references
-#     wc -l ?.txt | awk '{print $1}' > refN.txt
-#     #reset logifle
-#     cd /home/dryals/ryals/ahb
-#     mkdir -p aim
-#     echo -n "" > outputs/aim.out
-#     #specify reference file
-#     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
-#     #launch the admixture array
+echo "launching Ia script"
+    #count number of samples in each population
+    cd /home/dryals/ryals/ahb/references
+    wc -l ?.txt | awk '{print $1}' > refN.txt
+    #reset logifle
+    cd /home/dryals/ryals/ahb
+    mkdir -p aim
+    echo -n "" > outputs/aim.out
+    #specify reference file
+    echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
+    #launch the admixture array
 #     sbatch --array=1-16 AIM_v3.sh
 # 
 # echo "merging samples and references..."
@@ -138,15 +138,20 @@ echo "---------------------"
 #     echo "  indexing..."
 #     bcftools index -c admix.${version}.bcf.gz
 # 
-# #wait for Ia calculation to finish if it hasn't already
-# echo "waiting for Ia results (see aim.out)..."
-#     cd /home/dryals/ryals/ahb
-#     while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-#     do
-#         sleep 10 #wait between each check
-#     done
-#     echo ""
-#     
+# echo "counting total sites..."
+#     bcftools index -c admix.${version}.bcf.gz
+#     bcftools view admix.${version}.bcf.gz | grep -vc "#" > admix.${version}.sitecount
+
+# 
+#wait for Ia calculation to finish if it hasn't already
+echo "waiting for Ia results (see aim.out)..."
+    cd /home/dryals/ryals/ahb
+    while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+    do
+        sleep 10 #wait between each check
+    done
+    echo ""
+    
 echo "compiling Ia results..."    
     cd /scratch/bell/dryals/ahb/aim
     #this will hold all the aims
