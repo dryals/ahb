@@ -128,6 +128,7 @@ echo "launching Ia script"
     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
     #launch the admixture array
     sbatch --array=1-16 AIM_v3.sh
+    
 # 
 # echo "merging samples and references..."
 #     cd /scratch/bell/dryals/ahb

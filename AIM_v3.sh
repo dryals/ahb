@@ -25,7 +25,7 @@ date
 
 module load biocontainers bcftools r
 
-n=$( echo $SLURM_ARRAY_TASK_ID )
+NCHR=$( echo $SLURM_ARRAY_TASK_ID )
 log=/depot/bharpur/data/projects/ryals/ahb/outputs/aim.out
 
 cd /home/dryals/ryals/ahb/aim
@@ -33,37 +33,37 @@ filename=$( cat ref_filename.txt )
 echo "reading $filename ..."
 
 cd /scratch/bell/dryals/ahb/aim
-mkdir -p chr${n}
-cd chr${n}
+mkdir -p chr${NCHR}
+cd chr${NCHR}
 
-echo "starting chr $n" >> $log
+echo "starting chr $NCHR" >> $log
 
-bcftools view ../../$filename -r $n -Ob -o chr${n}refs.bcf.gz
-bcftools index -c chr${n}refs.bcf.gz
+bcftools view ../../$filename -r $NCHR -Ob -o chr${NCHR}refs.bcf.gz
+bcftools index -c chr${NCHR}refs.bcf.gz
 
 for pop in A C M O
 #for pop in A C L M O U Y
 do
-    echo "starting $n $pop ..."
-    bcftools view chr${n}refs.bcf.gz -S ~/ryals/ahb/references/${pop}.txt -Ou | bcftools +fill-tags | bcftools query -f'%CHROM\t%POS\t%AF\n' -o ${pop}.frq
+    echo "starting $NCHR $pop ..."
+    bcftools view chr${NCHR}refs.bcf.gz -S ~/ryals/ahb/references/${pop}.txt -Ou | bcftools +fill-tags | bcftools query -f'%CHROM\t%POS\t%AF\n' -o ${pop}.frq
     
     awk '{print $3}' ${pop}.frq > ${pop}.tmp
 done
 
-paste A.frq C.tmp M.tmp O.tmp > chr${n}.popfrq
-#paste A.frq C.tmp L.tmp M.tmp O.tmp U.tmp Y.tmp > chr${n}.popfrq
+paste A.frq C.tmp M.tmp O.tmp > chr${NCHR}.popfrq
+#paste A.frq C.tmp L.tmp M.tmp O.tmp U.tmp Y.tmp > chr${NCHR}.popfrq
 rm *.tmp *.frq
 
-echo "calculating Ia for chr $n" >> $log
+echo "calculating Ia for chr $NCHR" >> $log
 
-Rscript --vanilla --silent /depot/bharpur/data/projects/ryals/ahb/aimIa_v2.R $n
+Rscript --vanilla --silent /depot/bharpur/data/projects/ryals/ahb/aimIa_v2.R $NCHR
     #v2 runtime: ~3:40
     #v1 runtime: ~9:30
 
 #report to logs, using flock to avoid conflicts
 ( flock -x 9 
-    echo "FINISHED CHR $n" >> $log
-    echo "    FINISHED CHR $n" >> /depot/bharpur/data/projects/ryals/ahb/outputs/pipeline.out
+    echo "FINISHED CHR $NCHR" >> $log
+    echo "    FINISHED CHR $NCHR" >> /depot/bharpur/data/projects/ryals/ahb/outputs/pipeline.out
 ) 9> ~/ryals/ahb/.AIMwritelock
 echo "done"
 date
