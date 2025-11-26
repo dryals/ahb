@@ -202,14 +202,14 @@ echo "merging samples and references..."
     cd plink
     echo "admix.${version}" > plink_admix_filename.txt
 
-    
-echo "plink: pulling references..."  
-    #for unsupervised reference admix
-    cd $CLUSTER_SCRATCH/ahb/plink
-    plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
-        --keep ~/ryals/ahb/references/plink_refs.txt --maf 0.01 --geno 0.01 \
-        --threads $SLURM_NTASKS --silent --out reference.${version}
-    
+#     
+# echo "plink: pulling references..."  
+#     #for unsupervised reference admix
+#     cd $CLUSTER_SCRATCH/ahb/plink
+#     plink --bfile admix.${version} --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort \
+#         --keep ~/ryals/ahb/references/plink_refs.txt --maf 0.01 --geno 0.01 \
+#         --threads $SLURM_NTASKS --silent --out reference.${version}
+#     
     #kill script if the above fails
     if [ ! -f "admix.${version}.bed" ]; then
         echo "Plink Failed!"
@@ -230,11 +230,11 @@ echo "---------------------"
     sbatch supervised_admix_v3.sh
     
 #     
-echo "plink: generating PCA..."
-    cd $CLUSTER_SCRATCH/ahb
-    plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
-    
-    plink --bcf admix.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --silent --threads $SLURM_NTASKS --maf 0.05 --pca 500 --out plink/all.${version}
+# echo "plink: generating PCA..."
+#     cd $CLUSTER_SCRATCH/ahb
+#     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
+#     
+#     plink --bcf admix.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --silent --threads $SLURM_NTASKS --maf 0.05 --pca 500 --out plink/all.${version}
 
 #echo "starting reference admix..."
 
