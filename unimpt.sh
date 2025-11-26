@@ -49,29 +49,29 @@ echo "---------------------"
 #     #extract AHB samples 
 #     awk -F',' '{print $2}' ahb_metadata.csv | tail -n +2 > sample_lists/admix3.txt
 #     
-    cd $CLUSTER_SCRATCH/pipeline
-
-    bcftools view allsamp.bcf.gz -S ~/ryals/ahb/sample_lists/admix3.txt --threads $SLURM_NTASKS -Ob -o ../ahb/ahbsamples.allsites.bcf.gz
-    cd ../ahb
-    echo "    indexing..."
-    bcftools index -c ahbsamples.allsites.bcf.gz
-
-echo "filtering samples..."
-    cd $CLUSTER_SCRATCH/ahb
-    #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
-    bcftools filter ahbsamples.allsites.bcf.gz -S . \
-    -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
-    bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
-    -Ob -o samples.filter.${version}.bcf.gz
-
-    echo "    indexing..."
-    bcftools index -c samples.filter.${version}.bcf.gz
-
+#     cd $CLUSTER_SCRATCH/pipeline
+# 
+#     bcftools view allsamp.bcf.gz -S ~/ryals/ahb/sample_lists/admix3.txt --threads $SLURM_NTASKS -Ob -o ../ahb/ahbsamples.allsites.bcf.gz
+#     cd ../ahb
+#     echo "    indexing..."
+#     bcftools index -c ahbsamples.allsites.bcf.gz
+# 
+# echo "filtering samples..."
+#     cd $CLUSTER_SCRATCH/ahb
+#     #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
+#     bcftools filter ahbsamples.allsites.bcf.gz -S . \
+#     -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
+#     bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
+#     -Ob -o samples.filter.${version}.bcf.gz
+# 
+#     echo "    indexing..."
+#     bcftools index -c samples.filter.${version}.bcf.gz
+# 
 
 #just pull sites with sufficient evidence to call a genotype
 echo "pulling unimputed sites..."
     cd $CLUSTER_SCRATCH/ahb
-     bcftools filter samples.filter.oct25.bcf.gz -S . \
+     bcftools filter samples.filter.${version}.bcf.gz -S . \
         -i '( FMT/DP > 3 & FMT/RC == 0 ) | ( FMT/DP > 3 & FMT/AC == 0 ) | ( FMT/AC > 0 & FMT/RC > 0)' \
         -Ou | bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS -Ob -o samples.filter.${version}.bcf.gz
         

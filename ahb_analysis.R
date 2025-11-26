@@ -11,9 +11,13 @@
   library(rnaturalearth)
   library(sf)
   library(ggspatial)
+  library(lmtest)
   
   select = dplyr::select
   theme_set(theme_bw())
+  
+  #color pallette 
+  plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
   
   setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
 
@@ -351,6 +355,8 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     # ggplot(ahb.ano, aes(x = globe, y = A)) + geom_boxplot()
     # ggplot(ahb.ano, aes(x = A)) + geom_histogram() + facet_wrap(facets = vars(globe))
          
+    summary(ahbmod)
+    
     #logistic mitotype model fit
     with(ahbmod, pchisq(null.deviance - deviance, 
                         df.null - df.residual, lower.tail = FALSE))
@@ -379,10 +385,6 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 0)  )
     #false negatives
     sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
-    
-    
-  #color pallette 
-    plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
     
   
   #logistic regression of mitotypes
@@ -726,6 +728,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       sum( (ahbmod$fitted.values > 0.5 & ahb.moddat$AmitoBin == 0)  )
       #false negatives
       sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
+      
+  #compare two models
+      lrtest(ahbmod, ahbmod.full)
     
   #phenotypes
       qdmse = summary(lm(def ~ A, data = pheno))$residuals **2 %>%
