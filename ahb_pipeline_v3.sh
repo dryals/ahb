@@ -116,19 +116,19 @@ echo "---------------------"
 echo "selecting sites"
 echo "---------------------"
 #    
-echo "launching Ia script"
-    #count number of samples in each population
-    cd /home/dryals/ryals/ahb/references
-    wc -l ?.txt | awk '{print $1}' > refN.txt
-    #reset logifle
-    cd /home/dryals/ryals/ahb
-    mkdir -p aim
-    echo -n "" > outputs/aim.out
-    #specify reference file
-    echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
-    #launch the admixture array
-    sbatch --array=1-16 AIM_v3.sh
-    
+# echo "launching Ia script"
+#     #count number of samples in each population
+#     cd /home/dryals/ryals/ahb/references
+#     wc -l ?.txt | awk '{print $1}' > refN.txt
+#     #reset logifle
+#     cd /home/dryals/ryals/ahb
+#     mkdir -p aim
+#     echo -n "" > outputs/aim.out
+#     #specify reference file
+#     echo "reference.filter.${version}.bcf.gz" > aim/ref_filename.txt
+#     #launch the admixture array
+#     sbatch --array=1-16 AIM_v3.sh
+#     
 # 
 # echo "merging samples and references..."
 #     cd /scratch/bell/dryals/ahb
@@ -142,17 +142,17 @@ echo "launching Ia script"
 # echo "counting total sites..."
 #     bcftools index -c admix.${version}.bcf.gz
 #     bcftools view admix.${version}.bcf.gz | grep -vc "#" > admix.${version}.sitecount
-
 # 
-#wait for Ia calculation to finish if it hasn't already
-echo "waiting for Ia results (see aim.out)..."
-    cd /home/dryals/ryals/ahb
-    while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
-    do
-        sleep 10 #wait between each check
-    done
-    echo ""
-    
+# 
+# #wait for Ia calculation to finish if it hasn't already
+# echo "waiting for Ia results (see aim.out)..."
+#     cd /home/dryals/ryals/ahb
+#     while [ $(grep "FINISHED" outputs/aim.out | wc -l | awk '{print $1}') -lt 16 ] #wait for all 16 to finish
+#     do
+#         sleep 10 #wait between each check
+#     done
+#     echo ""
+#     
 echo "compiling Ia results..."    
     cd /scratch/bell/dryals/ahb/aim
     #this will hold all the aims
