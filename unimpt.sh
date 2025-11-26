@@ -56,30 +56,30 @@ echo "---------------------"
 #     echo "    indexing..."
 #     bcftools index -c ahbsamples.allsites.bcf.gz
 # 
-# echo "filtering samples..."
-#     cd $CLUSTER_SCRATCH/ahb
-#     #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
-#     bcftools filter ahbsamples.allsites.bcf.gz -S . \
-#     -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
-#     bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
-#     -Ob -o samples.filter.${version}.bcf.gz
-# 
-#     echo "    indexing..."
-#     bcftools index -c samples.filter.${version}.bcf.gz
-# 
+echo "filtering samples..."
+    cd $CLUSTER_SCRATCH/ahb
+    #run QC: declare < 0.99 probability missing, MAF>0.01, remove sites with > 10% missing genotypes
+    bcftools filter ahbsamples.allsites.bcf.gz -S . \
+    -i 'GP[:0] > 0.99 | GP[:1] > 0.99 | GP[:2] > 0.99' -Ou | \
+    bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS \
+    -Ob -o samples.filter.${version}.bcf.gz
+
+    echo "    indexing..."
+    bcftools index -c samples.filter.${version}.bcf.gz
+
 
 #just pull sites with sufficient evidence to call a genotype
 echo "pulling unimputed sites..."
     cd $CLUSTER_SCRATCH/ahb
      bcftools filter samples.filter.${version}.bcf.gz -S . \
         -i '( FMT/DP > 3 & FMT/RC == 0 ) | ( FMT/DP > 3 & FMT/AC == 0 ) | ( FMT/AC > 0 & FMT/RC > 0)' \
-        -Ou | bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS -Ob -o samples.filter.${version}.bcf.gz
+        -Ou | bcftools view -q 0.01:minor -e 'F_MISSING>0.1' --threads $SLURM_NTASKS -Ob -o samples.filter2.${version}.bcf.gz
         
     echo "    indexing..." 
-     bcftools index -c samples.filter.${version}.bcf.gz
+     bcftools index -c samples.filter2.${version}.bcf.gz
 
 echo "creating sample site list..."
-    bcftools query samples.filter.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
+    bcftools query samples.filter2.${version}.bcf.gz -f'%CHROM\t%POS\n' -o plink/samples.${version}.sites
 
 echo "filtering references..."
 #filter references to informative sites
@@ -117,7 +117,7 @@ echo "---------------------"
 echo "merging samples and references..."
     cd /scratch/bell/dryals/ahb
     #merge and remove new multialleles
-    bcftools merge reference.filter.${version}.bcf.gz samples.filter.${version}.bcf.gz -m snps -Ou | \
+    bcftools merge reference.filter.${version}.bcf.gz samples.filter2.${version}.bcf.gz -m snps -Ou | \
         bcftools norm -m +snps -Ou | bcftools view -M2 -m2 --threads $SLURM_NTASKS \
         -Ob -o admix.${version}.bcf.gz
     echo "  indexing..."
@@ -232,7 +232,7 @@ echo "---------------------"
 #     
 # echo "plink: generating PCA..."
 #     cd $CLUSTER_SCRATCH/ahb
-#     plink --bcf samples.filter.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
+#     plink --bcf samples.filter2.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --threads $SLURM_NTASKS --silent --maf 0.05 --pca 500 --out plink/samps.${version}
 #     
 #     plink --bcf admix.${version}.bcf.gz --make-bed --allow-extra-chr --chr-set 16 no-xy -chr $chrsShort --set-missing-var-ids @:# --silent --threads $SLURM_NTASKS --maf 0.05 --pca 500 --out plink/all.${version}
 
