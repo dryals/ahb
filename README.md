@@ -11,3 +11,5 @@
   - analyses included in publication, including logistic regression, PCA, and ancestry figures
 - `corr_concordance.cpp`
   - This C++ program used to estimate correlation and concordance rate between imputed and observed genotype for a large-dimenssional dataset. The code will generate a dataframe of concordance rate and imputation accuracy.
+- `recombRate.R`
+  - custom R script to recombination rate
