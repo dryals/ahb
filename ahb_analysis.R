@@ -128,15 +128,22 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   #export compound figure
     supp1 = plot_grid(p.allref, p.pureref, labels = "AUTO")
     supp1
-    ggsave("manuscript/figs/supp1.pdf", plot = supp1, height = 5, width = 10.5,
+    ggsave("manuscript/figs/figS1.pdf", plot = supp1, height = 5, width = 10.5,
            units = "in")
   
   
-  # #write out
-  #   write.table(balanced$SRR, file = "references/pureRefs.txt",
-  #               quote = F, row.names = F, col.names = F)
-  #   
-  #   
+  #write out
+    # write.table(balanced$SRR, file = "references/pureRefs.txt",
+    #             quote = F, row.names = F, col.names = F)
+    # 
+    # table.out = reffam
+    #   table.out$admixture_analysis = reffam$SRR %in% balanced$SRR
+    # write.csv(table.out %>% 
+    #             select(SRR_id = SRR, country, lineage, admixture_analysis) %>% 
+    #             arrange(desc(admixture_analysis)),
+    #           file = "data/reference_table.csv", row.names = F)
+
+
   # #write lists
   # linu = unique(balanced$lineage)
   # for(i in 1:length(linu)){
@@ -307,7 +314,7 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     pca$pop = factor(pca$pop,
                      levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
     
-    #attache lineage names to PCA
+    #attach lineage names to PCA
     reflins = read.delim("/home/dylan/Documents/bees/harpurlab/project/popgen/admixResults/fullref/refData.txt")
     allpca = allpca %>% left_join(reflins %>% select(oldid = SRR, lineage, country))
     allpca$lineage[is.na(allpca$lineage)] = "admixed"
@@ -437,7 +444,11 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     range(pheno$def)
 
     #plot
-    qdmse = summary(lm(def ~ A, data = pheno))$residuals **2 %>%
+    
+    quantdef.impt = lm(def ~ A + AmitoBin, data = pheno)
+    summary(quantdef.impt)
+    
+    qdmse = summary(quantdef.impt)$residuals **2 %>%
       mean() %>% 
       round(.,3)
     qdmse = paste0("MSE = ", qdmse)
@@ -454,8 +465,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
             axis.text = element_text(size = 7)) 
     p.quantdef
     
-    
-    bdmse = summary(lm(def ~ AmitoBin, data = pheno))$residuals **2 %>%
+    bindef.impt = lm(def ~ AmitoBin, data = pheno)
+    summary(bindef.impt)
+    bdmse = summary(bindef.impt)$residuals **2 %>%
       mean() %>% 
       round(.,3)
     bdmse = paste0("MSE = ", bdmse)
@@ -477,73 +489,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       theme(axis.title = element_text(size = 9),
             axis.text = element_text(size = 7))
     p.bindef
-  #   
-  # #leave-one-out
-  #   #quant
-  #   pheno.quant = pheno %>% filter(!is.na(A))
-  #   LOO = 
-  #   errs = rep(NA, nrow(pheno.quant))
-  #   for(i in 1:nrow(pheno.quant)){
-  #     xi = pheno.quant[i,]
-  #     xm1 = pheno.quant[-i,]
-  # 
-  #     mod = lm(def ~ A, data = xm1)
-  # 
-  #     errs[i] = (xi$def - predict(mod, xi))**2
-  #   }
-  #   mean(errs)
-
- # #plot false and correct assignments
- #      
- #      pheno.gtest = pheno
- #      pheno.gtest$assign = "correct"
- #      pheno.gtest$assign[pheno.gtest$def < 2 & pheno.gtest$A > 0.5] = 'FalsePositive'
- #      pheno.gtest$assign[pheno.gtest$def >= 2 & pheno.gtest$A < 0.5] = 'FalseNegative'
- #      
- #        
- #      ggplot(pheno.gtest, aes(x = A, y = def, color = assign)) + 
- #        geom_jitter(size = 2, alpha = 0.5,
- #                    height = 0, width = 0) + 
- #        geom_smooth(method = 'lm', linetype = 2, color = 'black',
- #                    linewidth = 0.5) +
- #        geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
- #        geom_vline(aes(xintercept = 0.5), linetype = 2, color = 'red') +
- #        labs(x = "A-lineage Admixture",
- #             y = "Defensive Score") +
- #        theme(axis.title = element_text(size = 9),
- #              axis.text = element_text(size = 7))
- #      
- #      table(pheno.gtest$assign)
- #      (17+2)/48
- #      
- #      
- #      pheno.mtest = pheno %>% 
- #        filter(!is.na(AmitoBin))
- #      pheno.mtest$assign = "Correct"
- #      pheno.mtest$assign[pheno.mtest$def < 2 & pheno.mtest$AmitoBin == TRUE] = 'FalsePositive'
- #      pheno.mtest$assign[pheno.mtest$def >= 2 & pheno.mtest$AmitoBin == FALSE] = 'FalseNegative'
- #      
- #      ggplot(pheno.mtest,aes( x = AmitoBin, y = def, color = assign)) + 
- #      geom_jitter(size = 2, alpha = 0.5,
- #                  height = 0, width = 0.05) + 
- #      geom_smooth(method = 'lm', linetype = 2, color = 'black',
- #                  linewidth = 0.5) +
- #      geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
- #      scale_x_continuous(breaks = c(0,1), labels = c("False","True"),
- #                         limits = c(-0.2, 1.2)) +
- #      labs(x = "A-lineage Mitotype",
- #           y = "") +
- #      theme(axis.title = element_text(size = 9),
- #            axis.text = element_text(size = 7))
- #      
- #      table(pheno.mtest$assign)
- #    
- #    #TODO: add sig to fig
- #    
- #    summary(lm(def ~ A, data = pheno))
- #    summary(lm(def ~ AmitoBin, data = pheno))
     
-    #PCA
+    #are the models different?
+    anova(bindef.impt, quantdef.impt)
 
 
   #PCA by population
@@ -582,8 +530,8 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
            aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
       geom_point(size = 2, alpha = 0.5) + 
       labs(shape = "Lineage", color = "Population",
-           x = paste0("PC1 (", PCev[1], "%)"),
-           y = paste0("PC2 (", PCev[2], "%)"))+
+           x = paste0("PC1 (", allPCev[1], "%)"),
+           y = paste0("PC2 (", allPCev[2], "%)"))+
       scale_color_manual(values = plot.colors)+
       theme_bw() +
       theme(legend.title=element_text(size=7),
@@ -630,12 +578,85 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     p.ancfig = plot_grid(sub.a, sub.b, sub.c, nrow = 3, 
                          rel_heights = c(0.9,1,0.7))
     
-    ggsave("manuscript/figs/fig3.pdf", plot = p.ancfig, height = 9, width = 7,
+    ggsave("manuscript/figs/fig4.pdf", plot = p.ancfig, height = 9, width = 7,
            units = "in")
     
-    #extended PCA
+#####
+# Extended PCA
+#####
+    #create df for both sample and global pca
+    PCev.plot = data.frame(PC = 1:100,
+                           samples = PCev[1:100],
+                           global = allPCev[1:100]) %>% 
+      pivot_longer(cols = c("samples", "global"), names_to = "analysis")
     
+    #plot % explained
+    p.exp = PCev.plot %>% filter(PC < 15) %>% 
+    ggplot(aes(x = PC, y = value)) + 
+      geom_col()+
+      facet_grid(cols = vars(analysis)) +
+      labs(y = "% variance explained")
     
+    #two global plots
+    p.gp1 = ggplot(allpca, 
+           aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
+      geom_point(size = 2, alpha = 0.5) + 
+      labs(shape = "Lineage", color = "Population",
+           x = paste0("PC1 (", allPCev[1], "%)"),
+           y = paste0("PC2 (", allPCev[2], "%)"))+
+      scale_color_manual(values = plot.colors)+
+      theme_bw() +
+      theme(legend.position = 'none',
+            axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7)) +
+      guides(color = guide_legend(byrow = TRUE),
+             shape = guide_legend(byrow = TRUE))
+    
+    p.gp2 = ggplot(allpca, 
+           aes(x = PC3, y = PC2, color = pop, shape = lineage)) + 
+      geom_point(size = 2, alpha = 0.5) + 
+      labs(shape = "Lineage", color = "Population",
+           x = paste0("PC3 (", allPCev[3], "%)"),
+           y = paste0("PC2 (", allPCev[2], "%)"))+
+      scale_color_manual(values = plot.colors)+
+      theme_bw() +
+      theme(legend.title=element_text(size=8),
+            legend.text=element_text(size = 7),
+            legend.spacing.y = unit(1, 'line'),
+            axis.title = element_text(size = 10),
+            axis.text = element_text(size = 8),
+            legend.key.size = unit(0.8,"line"),
+            legend.margin = margin(l = -6)) +
+      guides(color = guide_legend(byrow = TRUE),
+             shape = guide_legend(byrow = TRUE))
+    
+    #one sample plot
+    p.sp1 = ggplot(pca, 
+           aes(x = PC1, y = PC2, color = pop)) + 
+      geom_point(size = 2, alpha = 0.5) + 
+      labs(color = "Population",
+           x = paste0("PC1 (", PCev[1], "%)"),
+           y = paste0("PC2 (", PCev[2], "%)"))+
+      scale_color_manual(values = plot.colors)+
+      theme_bw() +
+      theme(legend.position = 'none',
+            legend.spacing.y = unit(1, 'line'),
+            axis.title = element_text(size = 9),
+            axis.text = element_text(size = 7)) +
+      guides(color = guide_legend(byrow = TRUE))
+    
+    #compound figure
+    
+    pcasup.a = plot_grid(p.gp1, p.sp1)
+    pcasup.b = plot_grid(p.gp2, NULL, rel_widths = c(1, 0.7))
+    pcasup.c = plot_grid(pcasup.a, pcasup.b, nrow = 2)
+    pcasup.d = plot_grid(p.exp, NULL, pcasup.c, nrow = 3, 
+                         rel_heights = c(0.5, 0.05, 1))
+    
+    ggsave("manuscript/figs/figS7.pdf", plot = pcasup.d, height = 10, width = 8,
+           units = "in")
+    
+      
   # ### Compound figure: two smaller figs
   #   ggsave("manuscript/figs/fig3a.pdf", plot = sub.a, height = 3, width = 7,
   #          units = "in")
@@ -730,10 +751,13 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       sum( (ahbmod$fitted.values < 0.5 & ahb.moddat$AmitoBin == 1)  )
       
   #compare two models
-      lrtest(ahbmod, ahbmod.full)
+      #lrtest(ahbmod, ahbmod.full)
     
   #phenotypes
-      qdmse = summary(lm(def ~ A, data = pheno))$residuals **2 %>%
+      
+      quantdef.unimpt = lm(def ~ A, data = pheno)
+      
+      qdmse = summary(quantdef.unimpt)$residuals **2 %>%
         mean() %>% 
         round(.,3)
       qdmse = paste0("MSE = ", qdmse)
@@ -751,6 +775,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
               axis.text = element_text(size = 7)) 
       p.u.quantdef
       
+      #are the imputed and unimputed models different?
+      anova(quantdef.impt, quantdef.unimpt)
+      
 
 #####
 # Compound Figure
@@ -766,7 +793,7 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
             labels = c("Imputed data", "Unimputed data", 
                        NA, NA, NA, NA, NA, NA, NA, NA))
       
-  ggsave("manuscript/figs/fig4.pdf", plot = impt.comp, height = 11, width = 7,
+  ggsave("manuscript/figs/figS2.pdf", plot = impt.comp, height = 11, width = 7,
          units = "in")
   
   
@@ -821,6 +848,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   #supplementary
   supp.admixcomp = plot_grid(plot.unimpt, plot.impt)
   supp.admixcomp
+  
+  ggsave("manuscript/figs/figS6.pdf", plot = supp.admixcomp, height = 5, width = 10,
+         units = "in")
 
 
   
