@@ -1,4 +1,4 @@
-# ahb
+# Assessing ancestry of North American honey bees (Apis mellifera) through low-pass whole-genome sequencing
 
 ## Important Files
 - `ahb_pipeline_v2.sh`
