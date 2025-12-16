@@ -2,7 +2,9 @@
 
 ## Important Files
 - `ahb_pipeline_v2.sh`
-  - full bash script to run ancestry analysis and PCA
+  - full bash script to run ancestry analysis and PCA using imputed data
+- `unimpt.sh`
+  - version of above taking only observed genotypes (uses no imputation)
 - `n_mitotype.sh`
   - full bash script to run mitotyping analysis
 - `aimIa_v2.R`
