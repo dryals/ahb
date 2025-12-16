@@ -263,7 +263,6 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   
     #establish populations
     ahb.plot$pop = ahb.plot$state
-    ahb.plot$pop[ahb.plot$pop == "Jamaica"] = "CAR"
     ahb.plot$pop = factor(ahb.plot$pop,
                           levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
     
@@ -505,26 +504,6 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   #PCA by lineage
     pcapair = pca %>% select(PC1, PC2, PC3, PC4, A, M, C, O)
     pairs(pcapair, upper.panel = NULL)
-    
-    
-  #all pca
-    #load data
-    #ahb4 = read.csv("AHBmeta4.csv") %>% rename(oldid = gencove_id)
-    
-    
-
-    # #explicit names
-    # allpca$expl = as.character(allpca$lineage)
-    #   allpca$expl[allpca$expl == "A"] = "Africa"
-    #   allpca$expl[allpca$expl == "M"] = "N. Europe"
-    #   allpca$expl[allpca$expl == "C"] = "S. Europe"
-    #   allpca$expl[allpca$expl == "O"] = "Mid. East"
-    #   #relevel
-    #   allpca$expl= as.factor(allpca$expl)
-    #   allpca$expl = relevel(allpca$expl, "USA")
-    
-    #allpca2 = allpca %>% filter(! state %in% c("Jamaica", "NM"))
-    
     
     p.globpca = ggplot(allpca, 
            aes(x = PC1, y = PC2, color = pop, shape = lineage)) + 
@@ -776,7 +755,7 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       p.u.quantdef
       
       #are the imputed and unimputed models different?
-      anova(quantdef.impt, quantdef.unimpt)
+      #anova(quantdef.impt, quantdef.unimpt)
       
 
 #####
@@ -878,7 +857,6 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
     rename(id = `Sample Name`) %>%
     left_join(ahb %>% select(id, state))
   
-    samp.gps$state[samp.gps$state == "Jamaica"] = "CAR"
     samp.gps$state = factor(samp.gps$state,
                      levels = c("IN", "PA", "FL","TX", "AZ", "CAR"))
     
@@ -999,11 +977,7 @@ found = found %>% filter(grepl("R1", V1)) %>%
 #                       `mitochondrial haplotype` = call)
 # sra$state[sra$state == "NM"] = "AZ"
 #   #long-form state names
-#   long.state =
-#     data.frame(state= unique(sra$state),
-#                long = c("Indiana", "Pennsylvania", "Florida",
-#                         "Texas", "Arizona", "Jamaica"))
-# 
+    #...
 #   sra = sra %>% left_join(long.state)
 #   sra$`geographic location` = paste0("USA:", sra$long)
 # 
@@ -1130,11 +1104,6 @@ found = found %>% filter(grepl("R1", V1)) %>%
 #     select(`Sample Name`, Organism, collection_date = date, `geographic location`,
 #            tissue, `isolation source`, collected_by, Sex, Dev_stage, Lat_Lon = gps)
 # 
-# 
-#   #remove Jamaica (already in SRA)
-#   #sra.out = sra.out %>% filter(!grepl("Jamaica", `geographic location`))
-# 
-# 
 #   #fix date format
 #   sra.out$collection_date = as.character(sra.out$collection_date)
 #   sra.out$sample_identifier = sra.out$`Sample Name`
@@ -1166,9 +1135,7 @@ found = found %>% filter(grepl("R1", V1)) %>%
 #              filename2 = paste0(gencoveid, "_R2.fastq.gz")) %>%
 #       select(-id, -gencoveid)
 #     
-#     #remove jamaica (already submitted)
-#     meta = meta %>% filter(!grepl("C2021", sample_name))
-    
+
     #write_tsv(meta, file = "../old_ahb/sra/sra_meta.tsv")
 
 #working with gencove samples
