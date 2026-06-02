@@ -17,12 +17,10 @@
   theme_set(theme_bw())
   
   #color pallette 
-  plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
+  #plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
+  plot.colors = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33")
   
   setwd("/home/dylan/Documents/bees/harpurlab/project/popgen/ahb")
-
-#TODO:
-  # full PCA figure
   
 #####
 # concordance figure
@@ -453,11 +451,11 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     qdmse = paste0("MSE = ", qdmse)
     
     p.quantdef = ggplot(pheno, aes(x = A, y = def)) + 
-      geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+      geom_jitter(color = plot.colors[5], size = 2, alpha = 0.5,
                   height = 0.05, width = 0) + 
       geom_smooth(method = 'lm', linetype = 2, color = 'black',
                   linewidth = 0.5) + 
-      annotate(geom = "text", x = 0.2, y = 2, label = qdmse, size = 6) +
+    #  annotate(geom = "text", x = 0.2, y = 2, label = qdmse, size = 6) +
       labs(x = "A-lineage Admixture",
            y = "Defensive Score") +
       theme(axis.title = element_text(size = 9),
@@ -475,12 +473,12 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       filter(!is.na(AmitoBin)) %>% 
       #mutate(AmitoBin = as.factor(AmitoBin)) %>% 
       ggplot(aes(x = AmitoBin, y = def)) + 
-      geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+      geom_jitter(color = plot.colors[5], size = 2, alpha = 0.5,
                   height = 0.05, width = 0.05) + 
       geom_smooth(method = 'lm', linetype = 2, color = 'black',
                   linewidth = 0.5) +
      # geom_hline(aes(yintercept = 2), linetype = 2, color = 'red') +
-      annotate(geom = "text", x = 0.4, y = 2, label = bdmse, size = 6) +
+     # annotate(geom = "text", x = 0.4, y = 2, label = bdmse, size = 6) +
       scale_x_continuous(breaks = c(0,1), labels = c("False","True"),
                          limits = c(-0.2, 1.2)) +
       labs(x = "A-lineage Mitotype",
@@ -626,11 +624,13 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
     
     #compound figure
     
-    pcasup.a = plot_grid(p.gp1, p.sp1)
-    pcasup.b = plot_grid(p.gp2, NULL, rel_widths = c(1, 0.7))
+    pcasup.a = plot_grid(p.gp1, p.sp1, labels = c("B", "C"))
+    pcasup.b = plot_grid(p.gp2, NULL, rel_widths = c(1, 0.7), labels = c("D", NULL))
     pcasup.c = plot_grid(pcasup.a, pcasup.b, nrow = 2)
     pcasup.d = plot_grid(p.exp, NULL, pcasup.c, nrow = 3, 
-                         rel_heights = c(0.5, 0.05, 1))
+                         rel_heights = c(0.5, 0.05, 1), labels = c("A", NULL, NULL))
+    
+    pcasup.d
     
     ggsave("manuscript/figs/figS7.pdf", plot = pcasup.d, height = 10, width = 8,
            units = "in")
@@ -742,11 +742,11 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
       qdmse = paste0("MSE = ", qdmse)
       
       p.u.quantdef = ggplot(pheno, aes(x = A, y = def)) + 
-        geom_jitter(color = "#66a61e", size = 2, alpha = 0.5,
+        geom_jitter(color = plot.colors[5], size = 2, alpha = 0.5,
                     height = 0.05, width = 0) + 
         geom_smooth(method = 'lm', linetype = 2, color = 'black',
                     linewidth = 0.5) + 
-        annotate(geom = "text", x = 0.4, y = 2, label = qdmse, size = 6) +
+        #annotate(geom = "text", x = 0.4, y = 2, label = qdmse, size = 6) +
         #ylim(0.5, 3) +
         labs(x = "A-lineage Admixture",
              y = "Defensive Score") +
@@ -761,6 +761,9 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
 #####
 # Compound Figure
 #####   
+    
+  h.fix = rep(-0.5, 10)
+    h.fix[8] = 0.2
       
   impt.comp = plot_grid(NULL, NULL, p.sampleadmix, p.u.sampleadmix,
             p.globpca, p.u.globpca,
@@ -770,7 +773,10 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
             rel_heights = c(0.15, 01,1,1.5,1),
             rel_widths = c(1.1, 1),
             labels = c("Imputed data", "Unimputed data", 
-                       NA, NA, NA, NA, NA, NA, NA, NA))
+                       "A", "B", "C", "D", "E", "F", "G", "H"),
+            hjust = h.fix)
+      
+  impt.comp
       
   ggsave("manuscript/figs/figS2.pdf", plot = impt.comp, height = 11, width = 7,
          units = "in")
@@ -788,9 +794,15 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   refadmix.unimpt.melt = refadmix.unimpt %>% melt(id.vars = c("oldid", "lineage"),
                                                   measure.vars = c("V1", "V2", "V3", "V4"),
                                                   variable.name = "fam")
+  #rename
+  name.trans = data.frame(fam = c("V1", "V2", "V3", "V4"),
+                          K = c("1", "2", "3", "4"))
+  
+  refadmix.unimpt.melt = refadmix.unimpt.melt %>% left_join(name.trans)
+  
   #bar chart
   plot.unimpt = ggplot(data = refadmix.unimpt.melt) +
-    geom_bar(aes(x = oldid, y = value, fill = fam), 
+    geom_bar(aes(x = oldid, y = value, fill = K), 
              stat='identity', width = 1) +
     facet_grid(cols = vars(lineage), scales = "free_x") +
     scale_fill_brewer(palette = "PRGn") +
@@ -810,14 +822,17 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
   refadmix.melt = refadmix %>% melt(id.vars = c("oldid", "lineage"),
                                     measure.vars = c("V1", "V2", "V3", "V4"),
                                     variable.name = "fam")
+
+  refadmix.melt = refadmix.melt %>% left_join(name.trans)
+  
   
   plot.impt = ggplot(data = refadmix.melt) +
-    geom_bar(aes(x = oldid, y = value, fill = fam), 
+    geom_bar(aes(x = oldid, y = value, fill = K), 
              stat='identity', width = 1) +
     facet_grid(cols = vars(lineage), scales = "free_x") +
     scale_fill_brewer(palette = "PRGn") +
-    labs(x = "reference genomes", y = NULL, fill = "Ancestry\nComponents",
-         title = "Imputed Sites n=30199") + 
+    labs(x = "reference genomes", y = NULL, fill = "K",
+         title = "    Imputed Sites n=30199") + 
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           axis.text.y = element_blank(),
@@ -825,7 +840,10 @@ gconc = read.csv("data/Andy bee concordance table - Sheet1.csv")
           panel.grid.major = element_blank())
   
   #supplementary
-  supp.admixcomp = plot_grid(plot.unimpt, plot.impt)
+  supp.admixcomp = plot_grid(plot.unimpt, plot.impt, 
+                             labels = c("A", "B"),
+                             hjust = c(-0.5, 0.5),
+                             nrow = 1)
   supp.admixcomp
   
   ggsave("manuscript/figs/figS6.pdf", plot = supp.admixcomp, height = 5, width = 10,
@@ -885,11 +903,7 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
                      , coords = c("lon", "lat"), crs = st_crs(region), 
                      agr = "constant")
   samp.gps = cbind(samp.gps, converted)
-  
-  #color pallette 
-  plot.colors = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02")
-  
-  
+
   
   #full map (world)
   cutout = ggplot(data = world) +
@@ -938,7 +952,7 @@ samp.gps = read_excel("../old_ahb/sra/biosample2.xlsx",) %>%
   full.map
   #save
   
-  pdf("manuscript/figs/fig2.pdf", width = 7, height = 7)
+  pdf("manuscript/figs/fig1.pdf", width = 7, height = 7)
 
     full.map
 
